@@ -1,0 +1,77 @@
+{
+  "name": "jev-cli",
+  "version": "0.1.0",
+  "description": "Fast, typed judgments from TypeSafe's Jev model at the command line: verify claims against evidence, screen text for prompt injection, rank candidates by meaning, or ask raw System One questions.",
+  "type": "module",
+  "license": "MIT",
+  "author": "Nasr Shaer",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/nasrshaer/jev-cli.git"
+  },
+  "homepage": "https://github.com/nasrshaer/jev-cli#readme",
+  "bugs": "https://github.com/nasrshaer/jev-cli/issues",
+  "bin": {
+    "jev": "dist/cli.js"
+  },
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE",
+    "CHANGELOG.md",
+    "SECURITY.md"
+  ],
+  "engines": {
+    "node": ">=20.12"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "clean": "rm -rf dist",
+    "dev": "tsx src/cli.ts",
+    "typecheck": "tsc --noEmit",
+    "lint": "biome check .",
+    "lint:fix": "biome check --write .",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
+    "test:e2e": "JEV_E2E=1 vitest run test/e2e.test.ts",
+    "check": "npm run typecheck && npm run lint && npm test",
+    "prepublishOnly": "npm run clean && npm run check && npm run build"
+  },
+  "keywords": [
+    "cli",
+    "typesafe",
+    "jev",
+    "system-one",
+    "ai",
+    "verification",
+    "guardrails",
+    "prompt-injection",
+    "semantic-search",
+    "fact-check"
+  ],
+  "dependencies": {
+    "@typesafe-ai/sdk": "^0.6.0",
+    "commander": "^15.0.0",
+    "zod": "^4.0.0"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^2.5.14",
+    "@types/node": "^22.0.0",
+    "@vitest/coverage-v8": "^5.0.1",
+    "tsx": "^4.23.13",
+    "typescript": "^5.9.0",
+    "vitest": "^5.0.1"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}
