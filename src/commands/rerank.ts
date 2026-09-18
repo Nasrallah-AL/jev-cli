@@ -10,7 +10,7 @@ import {
 } from "../core/rerank.js";
 import { CliError, EXIT } from "../errors.js";
 import { parseFailOn, parseProbability } from "../lib.js";
-import { clip, emit, formatProbability, paint, table, usageLine } from "../output.js";
+import { clip, emit, formatProbability, paint, type View } from "../output.js";
 import { collectCandidates, type FindFlags } from "./find.js";
 
 export interface RerankFlags extends Pick<FindFlags, "candidates" | "files" | "lines" | "topK" | "failOn"> {
@@ -32,7 +32,7 @@ export async function rerankAction(query: string, flags: RerankFlags, ctx: Comma
   const { candidates, topK, min, failOn } = resolve(flags, ctx);
   if (ctx.dryRun) {
     const { state, questions } = buildRerankRequest({ query, candidates, criteria: flags.criteria });
-    emit({ ...ctx.output, format: "json" }, { model: ctx.config.model, state, questions }, () => "");
+    emit({ ...ctx.output, format: "json" }, { model: ctx.config.model, state, questions }, () => ({}));
     return EXIT.OK;
   }
   const output = await runRerank(ctx.ask(), { query, candidates, topK, min, criteria: flags.criteria });
@@ -40,7 +40,7 @@ export async function rerankAction(query: string, flags: RerankFlags, ctx: Comma
   return rerankFailed(output, failOn) ? EXIT.JUDGMENT : EXIT.OK;
 }
 
-export function renderRerank(out: RerankOutput, ctx: CommandContext): string {
+export function renderRerank(out: RerankOutput, ctx: CommandContext): View {
   const c = ctx.output.color;
   const rows = out.ranked.map((h, i) => [
     String(i + 1),
@@ -51,13 +51,13 @@ export function renderRerank(out: RerankOutput, ctx: CommandContext): string {
     h.id,
     clip(h.text, 60),
   ]);
-  const lines = [
-    `${out.kept.length} of ${out.ranked.length} shown are relevant (min ${out.min})  ${paint(c, "dim", out.query)}`,
-    "",
-    table([["#", "Rel", "", "Id", "Text"], ...rows], { color: c }),
-  ];
-  if (!ctx.output.quiet) lines.push("", paint(c, "dim", usageLine(out.usage, out.model, out.provider)));
-  return lines.join("\n");
+  return {
+    head: [
+      `${out.kept.length} of ${out.ranked.length} shown are relevant (min ${out.min})  ${paint(c, "dim", out.query)}`,
+    ],
+    table: { columns: ["#", "Rel", "Keep", "Id", "Text"], rows },
+    usage: { usage: out.usage, model: out.model, provider: out.provider },
+  };
 }
 
 /** Batch: each row is a query reranked against the shared candidates. */

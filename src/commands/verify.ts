@@ -11,7 +11,7 @@ import {
 import { CliError, EXIT } from "../errors.js";
 import { parseItems, parseList, readInput, referenceId } from "../input.js";
 import { parseFailOn, parseProbability } from "../lib.js";
-import { clip, emit, formatProbability, paint, table, usageLine } from "../output.js";
+import { clip, emit, formatProbability, paint, type View } from "../output.js";
 
 export interface VerifyFlags {
   evidence?: string[];
@@ -54,7 +54,7 @@ export async function verifyAction(
 
   if (ctx.dryRun) {
     const { state, questions } = buildVerifyRequest({ claims, evidence });
-    emit({ ...ctx.output, format: "json" }, { model: ctx.config.model, state, questions }, () => "");
+    emit({ ...ctx.output, format: "json" }, { model: ctx.config.model, state, questions }, () => ({}));
     return EXIT.OK;
   }
 
@@ -63,7 +63,7 @@ export async function verifyAction(
   return verifyFailed(output, failOn) ? EXIT.JUDGMENT : EXIT.OK;
 }
 
-export function renderVerify(out: VerifyOutput, ctx: CommandContext): string {
+export function renderVerify(out: VerifyOutput, ctx: CommandContext): View {
   const c = ctx.output.color;
   const verdictStyle = (v: string) =>
     v === "verified"
@@ -74,8 +74,8 @@ export function renderVerify(out: VerifyOutput, ctx: CommandContext): string {
           ? paint(c, "yellow", v)
           : paint(c, "dim", v);
   const multiSource = out.results.some((r) => r.supporting_evidence !== null);
-  const header = ["#", "Verdict", "Conf", "Action", "Claim"];
-  if (multiSource) header.push("Source");
+  const columns = ["#", "Verdict", "Conf", "Action", "Claim"];
+  if (multiSource) columns.push("Source");
   const rows = out.results.map((r, i) => {
     const row = [
       String(i + 1),
@@ -88,13 +88,13 @@ export function renderVerify(out: VerifyOutput, ctx: CommandContext): string {
     return row;
   });
   const s = out.summary;
-  const lines = [
-    table([header, ...rows], { color: c }),
-    "",
-    `${s.verified} verified · ${s.contradicted} contradicted · ${s.unsupported} unsupported · ${s.needs_review} need review (auto-accept ≥ ${out.auto_accept})`,
-  ];
-  if (!ctx.output.quiet) lines.push(paint(c, "dim", usageLine(out.usage, out.model, out.provider)));
-  return lines.join("\n");
+  return {
+    table: { columns, rows },
+    tail: [
+      `${s.verified} verified · ${s.contradicted} contradicted · ${s.unsupported} unsupported · ${s.needs_review} need review (auto-accept ≥ ${out.auto_accept})`,
+    ],
+    usage: { usage: out.usage, model: out.model, provider: out.provider },
+  };
 }
 
 export function registerVerify(

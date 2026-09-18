@@ -5,7 +5,7 @@ import type { CommandContext } from "../context.js";
 import { type BatchItemRunner, type BatchRecord, parseRows, runBatch } from "../core/batch.js";
 import { CliError, EXIT } from "../errors.js";
 import { readInput } from "../input.js";
-import { paint } from "../output.js";
+import { paint, pluck, renderDelimited, renderMarkdown, renderPluck, type View } from "../output.js";
 import { prepareAskBatch, registerAsk } from "./ask.js";
 import { prepareClassifyBatch, registerClassify } from "./classify.js";
 import { prepareExtractBatch, registerExtract } from "./extract.js";
@@ -127,8 +127,15 @@ export async function batchAction(
   }
 
   const out = flags.output ? openOutput(flags.output) : process.stdout;
+  const format = ctx.output.format;
+  const streaming = format === "text" || format === "jsonl";
+  const collected: BatchRecord[] = [];
   const write = (record: BatchRecord) => {
-    out.write(`${JSON.stringify(record)}\n`);
+    if (ctx.output.pluck) {
+      out.write(`${renderPluck(pluck(record, ctx.output.pluck), format === "json" ? "jsonl" : format)}\n`);
+    } else if (streaming) {
+      out.write(`${JSON.stringify(record)}\n`);
+    } else collected.push(record);
   };
   const stopOnError = Boolean(flags.failFast);
   let aborted = false;
@@ -143,6 +150,25 @@ export async function batchAction(
   };
 
   const { summary } = await runBatch(rows, guarded, { concurrency, onRecord: write });
+  if (!ctx.output.pluck && !streaming) {
+    if (format === "json") out.write(`${JSON.stringify(collected, null, 2)}\n`);
+    else {
+      const view: View = {
+        table: {
+          columns: ["id", "ok", "failed", "result"],
+          rows: collected.map((r) => [
+            r.id,
+            String(r.ok),
+            String(r.failed),
+            r.ok ? summarizeResult(r.result) : `error: ${r.error}`,
+          ]),
+        },
+      };
+      out.write(
+        `${format === "md" ? renderMarkdown(view, { quiet: true }) : renderDelimited(view, format === "tsv" ? "\t" : ",")}\n`,
+      );
+    }
+  }
   if (out !== process.stdout)
     await new Promise<void>((resolve) => (out as ReturnType<typeof createWriteStream>).end(resolve));
 
@@ -153,6 +179,30 @@ export async function batchAction(
 
   if (summary.errors > 0) return EXIT.ERROR;
   return summary.failed > 0 ? EXIT.JUDGMENT : EXIT.OK;
+}
+
+/** One-cell summary of a sub-command result, for csv/tsv/md batch tables. */
+export function summarizeResult(result: unknown): string {
+  const r = (result ?? {}) as Record<string, any>;
+  if (typeof r.label === "string") return r.label;
+  if (Array.isArray(r.applied)) return r.applied.join("; ");
+  if (Array.isArray(r.path)) return r.path.join(" > ");
+  if (r.handler !== undefined) return r.handler ?? "none";
+  if (r.recommendation?.action) return r.recommendation.action;
+  if (r.exists_verdict)
+    return `${r.exists_verdict}: ${(r.top ?? []).map((t: { id: string }) => t.id).join("; ")}`;
+  if (Array.isArray(r.kept)) return r.kept.join("; ");
+  if (Array.isArray(r.results) && r.results[0]?.verdict)
+    return r.results.map((x: { verdict: string }) => x.verdict).join("; ");
+  if (r.fields)
+    return Object.entries(r.fields)
+      .map(([k, v]) => `${k}=${(v as { value: string | null }).value ?? ""}`)
+      .join("; ");
+  if (r.answers)
+    return Object.entries(r.answers)
+      .map(([k, v]) => `${k}=${(v as any).choice ?? (v as any).noul ?? (v as any).score ?? ""}`)
+      .join("; ");
+  return "";
 }
 
 function openOutput(ref: string) {
@@ -184,6 +234,8 @@ export function registerBatch(
       "after",
       `
 Output: one JSON object per row: {index, id, ok, failed, result | error, meta}. Rows keep input order.
+        --format json collects rows into one array; --format csv|tsv|md prints a summary table (id, ok,
+        failed, result). --pluck <path> prints one value per row, e.g. --pluck result.label.
 Exit:   1 if any row errored, 2 if any row matched the command's --fail-on, else 0.
 
 Examples:

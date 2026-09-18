@@ -4,7 +4,7 @@ import { configPath, DEFAULT_CONFIG, readConfigFile, setConfigValue, writeConfig
 import type { CommandContext } from "../context.js";
 import { resolveCredentials } from "../credentials.js";
 import { CliError, EXIT } from "../errors.js";
-import { emit, paint, table } from "../output.js";
+import { emit, paint } from "../output.js";
 import { resolveProvider } from "../provider.js";
 
 /** Mask a secret to its first four and last two characters. */
@@ -47,7 +47,6 @@ export async function configShow(ctx: CommandContext, rawEnv: NodeJS.ProcessEnv)
   emit(ctx.output, payload, () => {
     const c = ctx.output.color;
     const rows: string[][] = [
-      ["Key", "Value"],
       ["config file", `${path}${payload.config_file_exists ? "" : paint(c, "dim", " (not present)")}`],
       ["provider", `${ctx.config.provider}${resolved ? paint(c, "dim", ` → ${resolved}`) : ""}`],
       ["model", ctx.config.model],
@@ -76,9 +75,10 @@ export async function configShow(ctx: CommandContext, rawEnv: NodeJS.ProcessEnv)
     for (const [k, v] of Object.entries(payload.credential_sources)) {
       rows.push([`${k} key source`, v === "none" ? paint(c, "dim", "none (run: jev auth login)") : v]);
     }
-    const lines = [table(rows, { color: c })];
-    if (problem) lines.push("", paint(c, "yellow", problem));
-    return lines.join("\n");
+    return {
+      table: { columns: ["Key", "Value"], rows },
+      tail: problem ? [paint(c, "yellow", problem)] : undefined,
+    };
   });
   return problem ? EXIT.ERROR : EXIT.OK;
 }

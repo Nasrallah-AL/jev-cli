@@ -14,7 +14,7 @@ import {
 import { CliError, EXIT } from "../errors.js";
 import { parseJson, readInput, readStdin } from "../input.js";
 import { parseFailOn, parseProbability } from "../lib.js";
-import { emit, formatProbability, paint, usageLine } from "../output.js";
+import { emit, formatProbability, paint, type View } from "../output.js";
 
 export interface RouteFlags {
   handlers?: string;
@@ -64,7 +64,7 @@ export async function routeAction(
   const request = resolveRequest(positional, flags);
   if (ctx.dryRun) {
     const { state, questions } = buildRouteRequest({ request, handlers, instructions: flags.instructions });
-    emit({ ...ctx.output, format: "json" }, { model: ctx.config.model, state, questions }, () => "");
+    emit({ ...ctx.output, format: "json" }, { model: ctx.config.model, state, questions }, () => ({}));
     return EXIT.OK;
   }
   const output = await runRoute(ctx.ask(), {
@@ -77,26 +77,32 @@ export async function routeAction(
   return routeFailed(output, failOn) ? EXIT.JUDGMENT : EXIT.OK;
 }
 
-export function renderRoute(out: RouteOutput, ctx: CommandContext): string {
+export function renderRoute(out: RouteOutput, ctx: CommandContext): View {
   const c = ctx.output.color;
   const dist = Object.entries(out.probabilities)
     .sort(([, a], [, b]) => b - a)
     .map(([k, v]) => `${k} ${formatProbability(v)}`)
     .join(", ");
-  const head =
+  const head = [
     out.handler === null
       ? `${paint(c, ["bold", "yellow"], "no handler")}  conf ${formatProbability(out.confidence)}`
-      : `${paint(c, ["bold", "green"], out.handler)}  conf ${formatProbability(out.confidence)}  ${out.action === "review" ? paint(c, "yellow", "review") : paint(c, "dim", "auto")}`;
-  const lines = [head, paint(c, "dim", `[${dist}]`)];
+      : `${paint(c, ["bold", "green"], out.handler)}  conf ${formatProbability(out.confidence)}  ${out.action === "review" ? paint(c, "yellow", "review") : paint(c, "dim", "auto")}`,
+    paint(c, "dim", `[${dist}]`),
+  ];
+  const kv: Array<[string, string]> = [
+    ["handler", out.handler ?? ""],
+    ["confidence", formatProbability(out.confidence)],
+    ["action", out.action],
+  ];
   for (const [name, a] of Object.entries(out.args)) {
     const extra =
       a.type === "noul" ? `p ${formatProbability(a.probability)}` : `conf ${formatProbability(a.confidence)}`;
-    lines.push(
+    head.push(
       `  ${name} = ${a.value === null ? paint(c, "dim", "unspecified") : paint(c, "green", String(a.value))}  ${paint(c, "dim", extra)}`,
     );
+    kv.push([`arg.${name}`, a.value === null ? "" : String(a.value)]);
   }
-  if (!ctx.output.quiet) lines.push(paint(c, "dim", usageLine(out.usage, out.model, out.provider)));
-  return lines.join("\n");
+  return { head, kv, usage: { usage: out.usage, model: out.model, provider: out.provider } };
 }
 
 /** Batch: each row is a request routed with the shared handlers. */

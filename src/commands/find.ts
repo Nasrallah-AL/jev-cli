@@ -13,7 +13,7 @@ import {
 import { CliError, EXIT } from "../errors.js";
 import { nonEmptyLines, parseItems, readFile, readInput } from "../input.js";
 import { MAX_CANDIDATES, parseFailOn, parseProbability } from "../lib.js";
-import { clip, emit, formatProbability, paint, table, usageLine } from "../output.js";
+import { clip, emit, formatProbability, paint, type View } from "../output.js";
 
 export interface FindFlags {
   candidates?: string;
@@ -64,7 +64,7 @@ export async function findAction(query: string, flags: FindFlags, ctx: CommandCo
 
   if (ctx.dryRun) {
     const { state, questions } = buildFindRequest({ query, candidates });
-    emit({ ...ctx.output, format: "json" }, { model: ctx.config.model, state, questions }, () => "");
+    emit({ ...ctx.output, format: "json" }, { model: ctx.config.model, state, questions }, () => ({}));
     return EXIT.OK;
   }
 
@@ -73,7 +73,7 @@ export async function findAction(query: string, flags: FindFlags, ctx: CommandCo
   return findFailed(output, failOn) ? EXIT.JUDGMENT : EXIT.OK;
 }
 
-export function renderFind(out: FindOutput, ctx: CommandContext): string {
+export function renderFind(out: FindOutput, ctx: CommandContext): View {
   const c = ctx.output.color;
   const verdict =
     out.exists_verdict === "answered"
@@ -87,13 +87,11 @@ export function renderFind(out: FindOutput, ctx: CommandContext): string {
     hit.id,
     clip(hit.text, 60),
   ]);
-  const lines = [
-    `${verdict}  (exists ${formatProbability(out.exists)})  ${paint(c, "dim", out.query)}`,
-    "",
-    table([["#", "Prob", "Id", "Text"], ...rows], { color: c }),
-  ];
-  if (!ctx.output.quiet) lines.push("", paint(c, "dim", usageLine(out.usage, out.model, out.provider)));
-  return lines.join("\n");
+  return {
+    head: [`${verdict}  (exists ${formatProbability(out.exists)})  ${paint(c, "dim", out.query)}`],
+    table: { columns: ["#", "Prob", "Id", "Text"], rows },
+    usage: { usage: out.usage, model: out.model, provider: out.provider },
+  };
 }
 
 export function registerFind(

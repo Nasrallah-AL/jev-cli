@@ -46,7 +46,7 @@ Settings resolve in this order, later wins: built-in defaults, config file, envi
 | `JEV_PROVIDER` | Force `typesafe`, `openrouter`, or `cloudflare` |
 | `JEV_MODEL` | Default model |
 | `JEV_TIMEOUT_MS` | Default per-request timeout |
-| `JEV_FORMAT` | Default output format, `text` or `json` |
+| `JEV_FORMAT` | Default output format: `text`, `json`, `jsonl`, `md`, `csv`, `tsv` |
 | `JEV_CONFIG` | Config file path |
 | `JEV_CREDENTIALS` | Credentials file path (file store) |
 | `JEV_CREDENTIAL_STORE` | `auto`, `keychain`, or `file` |
@@ -67,7 +67,8 @@ Work before or after the subcommand.
 
 | Flag | Meaning |
 | --- | --- |
-| `--json` / `--format <text\|json>` | Output format |
+| `--json`, `--md`, `--format <name>` | `text`, `json`, `jsonl`, `md`, `csv`, `tsv`; see [Output formats](output.md) |
+| `--pluck <path>` | Print one value from the JSON result |
 | `-m, --model <name>` | `jev-latest` or a pinned version such as `jev-1.13.0` |
 | `-P, --provider <name>` | `auto`, `typesafe`, `openrouter`, `cloudflare` |
 | `--timeout <ms>` | Per-request timeout, default 30000 |

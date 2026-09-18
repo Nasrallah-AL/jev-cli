@@ -7,7 +7,7 @@ import { parseTranscript } from "../core/transcript.js";
 import { CliError, EXIT } from "../errors.js";
 import { readInput, readStdin } from "../input.js";
 import { parseFailOn, parseProbability } from "../lib.js";
-import { clip, emit, formatProbability, paint, table, usageLine } from "../output.js";
+import { clip, emit, formatProbability, paint, type View } from "../output.js";
 import { collectToolCalls, fitState, resolveOptions } from "../vendor/compaction/index.js";
 
 export interface CompactFlags {
@@ -82,7 +82,7 @@ export async function compactAction(
         state_stage: fitted?.stage ?? "",
         state: fitted?.state ?? null,
       },
-      () => "",
+      () => ({}),
     );
     return EXIT.OK;
   }
@@ -101,20 +101,15 @@ export async function compactAction(
   return compactFailed(output, failOn) ? EXIT.JUDGMENT : EXIT.OK;
 }
 
-export function renderCompact(
-  out: CompactOutput,
-  ctx: CommandContext,
-  format: string,
-  wrote?: string,
-): string {
+export function renderCompact(out: CompactOutput, ctx: CommandContext, format: string, wrote?: string): View {
   const c = ctx.output.color;
   const s = out.stats;
   const pct = `${Math.round(out.reduction * 100)}%`;
-  const head = out.worth_it
+  const headline = out.worth_it
     ? paint(c, ["bold", "green"], `${pct} smaller`)
     : paint(c, ["bold", "yellow"], `${pct} smaller (below ${Math.round(out.min_reduction * 100)}% minimum)`);
-  const lines = [
-    `${head}  ${s.messagesBefore} → ${s.messagesAfter} messages · ${s.charsBefore.toLocaleString()} → ${s.charsAfter.toLocaleString()} chars`,
+  const head = [
+    `${headline}  ${s.messagesBefore} → ${s.messagesAfter} messages · ${s.charsBefore.toLocaleString()} → ${s.charsAfter.toLocaleString()} chars`,
     paint(
       c,
       "dim",
@@ -122,34 +117,33 @@ export function renderCompact(
     ),
   ];
   const decided = out.decisions.filter((d) => d.reason !== "pinned");
-  if (decided.length > 0) {
-    const style = (a: string) =>
-      a === "keep"
-        ? paint(c, "green", a)
-        : a === "drop_result"
-          ? paint(c, "yellow", "truncate")
-          : paint(c, "red", "drop");
-    const rows = decided.map((d) => [
-      d.id,
-      clip(d.tool, 14),
-      style(d.action),
-      formatProbability(d.keepCall),
-      formatProbability(d.keepResult),
-    ]);
-    lines.push("", table([["Call", "Tool", "Action", "P(call)", "P(result)"], ...rows], { color: c }));
-  }
-  lines.push("");
-  lines.push(
-    paint(
-      c,
-      "dim",
-      wrote
-        ? `compacted messages written to ${wrote.replace(/^@/, "")} (${format} in, messages JSON out)`
-        : `add --out <file> to write the compacted messages (${format} in, messages JSON out)`,
-    ),
-  );
-  if (!ctx.output.quiet) lines.push(paint(c, "dim", usageLine(out.usage, out.model, out.provider)));
-  return lines.join("\n");
+  const style = (a: string) =>
+    a === "keep"
+      ? paint(c, "green", a)
+      : a === "drop_result"
+        ? paint(c, "yellow", "truncate")
+        : paint(c, "red", "drop");
+  const rows = decided.map((d) => [
+    d.id,
+    clip(d.tool, 14),
+    style(d.action),
+    formatProbability(d.keepCall),
+    formatProbability(d.keepResult),
+  ]);
+  return {
+    head,
+    table: decided.length ? { columns: ["Call", "Tool", "Action", "P(call)", "P(result)"], rows } : undefined,
+    tail: [
+      paint(
+        c,
+        "dim",
+        wrote
+          ? `compacted messages written to ${wrote.replace(/^@/, "")} (${format} in, messages JSON out)`
+          : `add --out <file> to write the compacted messages (${format} in, messages JSON out)`,
+      ),
+    ],
+    usage: { usage: out.usage, model: out.model, provider: out.provider },
+  };
 }
 
 export function registerCompact(

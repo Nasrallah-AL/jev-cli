@@ -1,12 +1,13 @@
 import { type JevConfig, type PartialConfig, PROVIDERS, type ProviderName, resolveConfig } from "./config.js";
 import { withStoredCredentials } from "./credentials.js";
 import { CliError } from "./errors.js";
-import { type OutputOptions, shouldColor } from "./output.js";
+import { FORMATS, type Format, type OutputOptions, shouldColor } from "./output.js";
 import { type AskFn, createAsk } from "./provider.js";
 
 /** Global flags shared by every command (declared on the root program). */
 export interface GlobalFlags {
   json?: boolean;
+  md?: boolean;
   format?: string;
   model?: string;
   provider?: string;
@@ -14,6 +15,7 @@ export interface GlobalFlags {
   color?: boolean;
   quiet?: boolean;
   dryRun?: boolean;
+  pluck?: string;
 }
 
 export interface CommandContext {
@@ -50,11 +52,13 @@ export function flagsToConfig(flags: GlobalFlags): PartialConfig {
     out.timeoutMs = n;
   }
   if (flags.json) out.format = "json";
+  else if (flags.md) out.format = "md";
   else if (flags.format) {
-    if (flags.format !== "json" && flags.format !== "text") {
-      throw new CliError(`Unknown format "${flags.format}". Allowed: text, json.`);
+    const f = flags.format.toLowerCase();
+    if (!(FORMATS as readonly string[]).includes(f)) {
+      throw new CliError(`Unknown format "${flags.format}". Allowed: ${FORMATS.join(", ")}.`);
     }
-    out.format = flags.format;
+    out.format = f as Format;
   }
   return out as PartialConfig;
 }
@@ -66,6 +70,7 @@ export function buildContext(flags: GlobalFlags, opts: ContextOptions = {}): Com
     format: config.format,
     color: flags.color === false ? false : shouldColor(env),
     quiet: Boolean(flags.quiet),
+    pluck: flags.pluck?.trim() || undefined,
     stream: opts.stream,
   };
   let cached: AskFn | undefined;

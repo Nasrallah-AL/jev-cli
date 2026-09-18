@@ -10,7 +10,7 @@ import {
 import type { BatchItemRunner } from "../core/batch.js";
 import { CliError, EXIT } from "../errors.js";
 import { parseJson, readInput, readStdin } from "../input.js";
-import { emit, formatProbability, paint, usageLine } from "../output.js";
+import { emit, formatProbability, paint, type View } from "../output.js";
 
 export interface AskFlags {
   questions?: string;
@@ -55,7 +55,7 @@ export async function askAction(
   const questions = resolveQuestions(flags);
 
   if (ctx.dryRun) {
-    emit({ ...ctx.output, format: "json" }, { model: ctx.config.model, state, questions }, () => "");
+    emit({ ...ctx.output, format: "json" }, { model: ctx.config.model, state, questions }, () => ({}));
     return EXIT.OK;
   }
 
@@ -64,34 +64,38 @@ export async function askAction(
   return EXIT.OK;
 }
 
-export function renderAsk(out: AskOutput, ctx: CommandContext): string {
+export function renderAsk(out: AskOutput, ctx: CommandContext): View {
   const c = ctx.output.color;
-  const lines: string[] = [];
+  const head: string[] = [];
+  const kv: Array<[string, string]> = [];
   for (const [id, answer] of Object.entries(out.answers)) {
     const a = answer as Record<string, any>;
     if (a?.type === "noul") {
-      lines.push(`${paint(c, "bold", id)}: ${formatProbability(a.noul)}`);
+      head.push(`${paint(c, "bold", id)}: ${formatProbability(a.noul)}`);
+      kv.push([id, formatProbability(a.noul)]);
     } else if (a?.type === "choice") {
       const dist = Object.entries(a.probabilities ?? {})
         .sort(([, x], [, y]) => (y as number) - (x as number))
         .map(([k, v]) => `${k} ${formatProbability(v as number)}`)
         .join(", ");
-      lines.push(
+      head.push(
         `${paint(c, "bold", id)}: ${paint(c, "green", String(a.choice))}  conf ${formatProbability(a.confidence)}  [${dist}]`,
       );
+      kv.push([id, `${a.choice} (conf ${formatProbability(a.confidence)})`]);
     } else if (a?.type === "score") {
       const levels = Object.entries(a.probabilities ?? {})
         .map(([k, v]) => `${k} ${formatProbability(v as number)}`)
         .join(", ");
-      lines.push(
+      head.push(
         `${paint(c, "bold", id)}: ${paint(c, "green", Number(a.score).toFixed(2))}  conf ${formatProbability(a.confidence)}  [${levels}]`,
       );
+      kv.push([id, `${Number(a.score).toFixed(2)} (conf ${formatProbability(a.confidence)})`]);
     } else {
-      lines.push(`${paint(c, "bold", id)}: ${JSON.stringify(answer)}`);
+      head.push(`${paint(c, "bold", id)}: ${JSON.stringify(answer)}`);
+      kv.push([id, JSON.stringify(answer)]);
     }
   }
-  if (!ctx.output.quiet) lines.push(paint(c, "dim", usageLine(out.usage, out.model, out.provider)));
-  return lines.join("\n");
+  return { head, kv, usage: { usage: out.usage, model: out.model, provider: out.provider } };
 }
 
 export function registerAsk(

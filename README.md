@@ -62,13 +62,13 @@ Every command follows the same rules, so learn them once.
 
 **Input.** Any value can be literal text, `@path` to read a file, or `-` for stdin. `@@text` is a literal starting with `@`. One `-` per command.
 
-**Output.** A table for humans by default; `--json` for scripts. JSON always carries `command`, `model`, `provider`, and `usage` (token counts), plus the command's fields. Field names are a stable contract; changes are listed in [CHANGELOG.md](CHANGELOG.md).
+**Output.** A table for humans by default. `--json` for scripts, `--md` for PR comments and job summaries, `--format csv|tsv|jsonl` for spreadsheets and pipelines, `--pluck <path>` for one value (`--pluck label`). JSON always carries `command`, `model`, `provider`, and `usage`, plus the command's fields; field names are a stable contract. See [Output formats](docs/output.md).
 
 **Exit codes.** `0` success. `1` usage, config, input, or network error (details on stderr). `2` the command ran and a `--fail-on` condition matched, for example a contradicted claim or a blocked page. Code 2 is what makes `jev` a gate in `&&` chains, hooks, and CI.
 
 **Thresholds.** Defaults come from TypeSafe's cookbooks. Treat them as starting points: run over a sample of your data with `--json`, look at the distributions, and tune with the flags or in [config](docs/config.md).
 
-**Global flags.** `--json`, `--dry-run`, `-m/--model`, `-P/--provider`, `--timeout`, `-q/--quiet`, `--no-color`. They work before or after the subcommand.
+**Global flags.** `--json`, `--md`, `--format`, `--pluck`, `--dry-run`, `-m/--model`, `-P/--provider`, `--timeout`, `-q/--quiet`, `--no-color`. They work before or after the subcommand.
 
 ## Claude Code plugin
 
@@ -83,6 +83,7 @@ See [plugin/README.md](plugin/README.md), and [plugin/hooks/README.md](plugin/ho
 
 ## More
 
+- [Output formats](docs/output.md): text, json, jsonl, md, csv, tsv, and `--pluck`
 - [Configuration](docs/config.md): config file, environment variables, providers, global flags
 - [Recipes](docs/recipes.md): CI gates, agent guardrails, dedupe, routing, compaction
 - [Guidelines](docs/guidelines.md): writing good claims and labels, reading confidence, cost
@@ -92,4 +93,4 @@ See [plugin/README.md](plugin/README.md), and [plugin/hooks/README.md](plugin/ho
 
 ## License
 
-[MIT](LICENSE). Compaction adapted from [fast-jev-compaction](https://github.com/tamaratran/fast-jev-compaction); see [NOTICE](NOTICE).
+[MIT](LICENSE)

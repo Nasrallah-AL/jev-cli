@@ -11,7 +11,7 @@ import {
 import { CliError, EXIT } from "../errors.js";
 import { readInput, readStdin } from "../input.js";
 import { parseFailOn, parseProbability } from "../lib.js";
-import { emit, formatProbability, paint, usageLine } from "../output.js";
+import { emit, formatProbability, paint, type View } from "../output.js";
 
 export interface ScreenFlags {
   purpose?: string;
@@ -38,7 +38,7 @@ export async function screenAction(
 
   if (ctx.dryRun) {
     const { state, questions } = buildScreenRequest({ text, purpose: flags.purpose });
-    emit({ ...ctx.output, format: "json" }, { model: ctx.config.model, state, questions }, () => "");
+    emit({ ...ctx.output, format: "json" }, { model: ctx.config.model, state, questions }, () => ({}));
     return EXIT.OK;
   }
 
@@ -47,7 +47,7 @@ export async function screenAction(
   return screenFailed(output, failOn) ? EXIT.JUDGMENT : EXIT.OK;
 }
 
-export function renderScreen(out: ScreenOutput, ctx: CommandContext): string {
+export function renderScreen(out: ScreenOutput, ctx: CommandContext): View {
   const c = ctx.output.color;
   const action = out.recommendation.action;
   const styled =
@@ -59,13 +59,21 @@ export function renderScreen(out: ScreenOutput, ctx: CommandContext): string {
           ? paint(c, ["bold", "dim"], action.toUpperCase())
           : paint(c, ["bold", "green"], action.toUpperCase());
   const p = out.probabilities;
-  const lines = [
-    `${styled}  ${out.recommendation.reason}`,
-    `injection ${formatProbability(p.injection)} · substance ${formatProbability(p.substance)} · relevance ${formatProbability(p.relevance)}`,
-    paint(c, "dim", `thresholds: block ≥ ${out.thresholds.block_at}, review ≥ ${out.thresholds.review_at}`),
-  ];
-  if (!ctx.output.quiet) lines.push(paint(c, "dim", usageLine(out.usage, out.model, out.provider)));
-  return lines.join("\n");
+  return {
+    head: [
+      `${styled}  ${out.recommendation.reason}`,
+      `injection ${formatProbability(p.injection)} · substance ${formatProbability(p.substance)} · relevance ${formatProbability(p.relevance)}`,
+      paint(c, "dim", `thresholds: block ≥ ${out.thresholds.block_at}, review ≥ ${out.thresholds.review_at}`),
+    ],
+    kv: [
+      ["action", action],
+      ["reason", out.recommendation.reason],
+      ["injection", formatProbability(p.injection)],
+      ["substance", formatProbability(p.substance)],
+      ["relevance", formatProbability(p.relevance)],
+    ],
+    usage: { usage: out.usage, model: out.model, provider: out.provider },
+  };
 }
 
 export function registerScreen(

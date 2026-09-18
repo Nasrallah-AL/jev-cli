@@ -11,7 +11,7 @@ import {
 } from "../credentials.js";
 import { CliError, EXIT } from "../errors.js";
 import { readStdin } from "../input.js";
-import { emit, paint, table } from "../output.js";
+import { emit, paint } from "../output.js";
 import { mask } from "./config.js";
 
 function providerArg(raw: string | undefined): CredentialProvider {
@@ -68,7 +68,7 @@ export async function authLogin(
   emit(
     ctx.output,
     { command: "auth", action: "login", provider, store: store.kind, location: store.location },
-    () => `Stored the ${provider} key in ${store.location}.${note}`,
+    () => ({ head: [`Stored the ${provider} key in ${store.location}.${note}`] }),
   );
   return EXIT.OK;
 }
@@ -88,15 +88,17 @@ export function authStatus(ctx: CommandContext, env = process.env): number {
   };
   emit(ctx.output, payload, () => {
     const c = ctx.output.color;
-    const t = rows.map((r) => [
-      r.provider,
-      r.source === "none" ? paint(c, "dim", "none") : r.source,
-      r.key ?? paint(c, "dim", "-"),
-    ]);
-    return [
-      table([["Provider", "Source", "Key"], ...t], { color: c }),
-      paint(c, "dim", `store: ${store.location}`),
-    ].join("\n");
+    return {
+      table: {
+        columns: ["Provider", "Source", "Key"],
+        rows: rows.map(({ provider, source, key: masked }) => [
+          provider,
+          source === "none" ? paint(c, "dim", "none") : source,
+          masked ?? paint(c, "dim", "-"),
+        ]),
+      },
+      tail: [paint(c, "dim", `store: ${store.location}`)],
+    };
   });
   return rows.some((r) => r.source !== "none") ? EXIT.OK : EXIT.ERROR;
 }
@@ -110,11 +112,13 @@ export function authLogout(
   const store = resolveStore(env);
   const providers = flags.all ? [...CREDENTIAL_PROVIDERS] : [providerArg(providerName)];
   const removed = providers.filter((p) => store.delete(p));
-  emit(ctx.output, { command: "auth", action: "logout", removed, store: store.kind }, () =>
-    removed.length
-      ? `Removed ${removed.join(", ")} from ${store.location}.`
-      : `Nothing stored for ${providers.join(", ")} in ${store.location}.`,
-  );
+  emit(ctx.output, { command: "auth", action: "logout", removed, store: store.kind }, () => ({
+    head: [
+      removed.length
+        ? `Removed ${removed.join(", ")} from ${store.location}.`
+        : `Nothing stored for ${providers.join(", ")} in ${store.location}.`,
+    ],
+  }));
   return EXIT.OK;
 }
 

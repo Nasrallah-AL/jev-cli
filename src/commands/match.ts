@@ -15,7 +15,7 @@ import {
 import { CliError, EXIT } from "../errors.js";
 import { parseItems, parseJson, readInput } from "../input.js";
 import { parseFailOn } from "../lib.js";
-import { clip, emit, formatProbability, paint, table, usageLine } from "../output.js";
+import { clip, emit, formatProbability, paint, type View } from "../output.js";
 
 export interface MatchFlags {
   pairs?: string;
@@ -96,7 +96,7 @@ export async function matchAction(flags: MatchFlags, ctx: CommandContext): Promi
         state,
         questions,
       },
-      () => "",
+      () => ({}),
     );
     return EXIT.OK;
   }
@@ -105,7 +105,7 @@ export async function matchAction(flags: MatchFlags, ctx: CommandContext): Promi
   return matchFailed(output, failOn) ? EXIT.JUDGMENT : EXIT.OK;
 }
 
-export function renderMatch(out: MatchOutput, ctx: CommandContext): string {
+export function renderMatch(out: MatchOutput, ctx: CommandContext): View {
   const c = ctx.output.color;
   const style = (d: string) =>
     d === "same" ? paint(c, "green", d) : d === "different" ? paint(c, "dim", d) : paint(c, "yellow", d);
@@ -116,13 +116,11 @@ export function renderMatch(out: MatchOutput, ctx: CommandContext): string {
     clip(r.right, 28),
   ]);
   const s = out.summary;
-  const lines = [
-    table([["Decision", "Conf", "Left", "Right"], ...rows], { color: c }),
-    "",
-    `${s.same} same · ${s.unclear} unclear · ${s.different} different`,
-  ];
-  if (!ctx.output.quiet) lines.push(paint(c, "dim", usageLine(out.usage, out.model, out.provider)));
-  return lines.join("\n");
+  return {
+    table: { columns: ["Decision", "Conf", "Left", "Right"], rows },
+    tail: [`${s.same} same · ${s.unclear} unclear · ${s.different} different`],
+    usage: { usage: out.usage, model: out.model, provider: out.provider },
+  };
 }
 
 export function registerMatch(

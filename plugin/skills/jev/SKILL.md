@@ -47,10 +47,12 @@ which jev >/dev/null 2>&1 && jev config --json || echo "MISSING"
   `TYPESAFE_API_KEY`. Key from https://console.typesafe.ai/settings/keys. Never ask them to paste
   the key into the chat, and never run `jev auth login` yourself.
 
-## Always use `--json`
+## Always use `--json` (or `--pluck`)
 
 Parse the JSON; do not scrape the text table. Every result has `command`, `model`, `provider`,
-`usage.input_tokens`, plus the command's fields below. Add `-q` when you don't need usage.
+`usage.input_tokens`, plus the command's fields below. When you need one value, `--pluck <path>`
+prints just it (`--pluck label`, `--pluck results[].verdict`, `--pluck recommendation.action`).
+When you are writing a report for the user, `--md -q` gives a ready-to-paste Markdown table.
 
 ## Exit codes
 

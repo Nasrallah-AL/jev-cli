@@ -14,7 +14,7 @@ export const partialConfigSchema = z.object({
   provider: z.enum(PROVIDERS).optional(),
   model: z.string().min(1).optional(),
   timeoutMs: z.number().int().positive().optional(),
-  format: z.enum(["text", "json"]).optional(),
+  format: z.enum(["text", "json", "jsonl", "csv", "tsv", "md"]).optional(),
   verify: z.object({ autoAccept: prob.optional() }).optional(),
   screen: z.object({ blockAt: prob.optional(), reviewAt: prob.optional() }).optional(),
   find: z
@@ -46,7 +46,7 @@ export const configSchema = z.object({
   provider: z.enum(PROVIDERS).default("auto"),
   model: z.string().min(1).default("jev-latest"),
   timeoutMs: z.number().int().positive().default(30_000),
-  format: z.enum(["text", "json"]).default("text"),
+  format: z.enum(["text", "json", "jsonl", "csv", "tsv", "md"]).default("text"),
   verify: z.object({ autoAccept: prob.default(0.8) }).prefault({}),
   screen: z.object({ blockAt: prob.default(0.75), reviewAt: prob.default(0.25) }).prefault({}),
   find: z

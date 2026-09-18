@@ -2,7 +2,7 @@ import { TypeSafeClient } from "@typesafe-ai/sdk";
 import type { Command } from "commander";
 import type { CommandContext } from "../context.js";
 import { CliError, EXIT } from "../errors.js";
-import { emit, paint, table } from "../output.js";
+import { emit, paint } from "../output.js";
 import { resolveProvider } from "../provider.js";
 
 export async function modelsAction(ctx: CommandContext, env: NodeJS.ProcessEnv): Promise<number> {
@@ -19,14 +19,16 @@ export async function modelsAction(ctx: CommandContext, env: NodeJS.ProcessEnv):
   });
   const models = await client.models.list();
   const payload = { command: "models", provider, models, default: ctx.config.model };
-  emit(ctx.output, payload, () => {
-    const rows = models.map((m) => [
-      m.name === ctx.config.model ? paint(ctx.output.color, "green", m.name) : m.name,
-      m.release_date,
-      m.description,
-    ]);
-    return table([["Name", "Released", "Description"], ...rows], { color: ctx.output.color });
-  });
+  emit(ctx.output, payload, () => ({
+    table: {
+      columns: ["Name", "Released", "Description"],
+      rows: models.map((m) => [
+        m.name === ctx.config.model ? paint(ctx.output.color, "green", m.name) : m.name,
+        m.release_date,
+        m.description,
+      ]),
+    },
+  }));
   return EXIT.OK;
 }
 

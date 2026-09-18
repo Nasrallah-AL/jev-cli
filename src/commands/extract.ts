@@ -14,7 +14,7 @@ import {
 import { CliError, EXIT } from "../errors.js";
 import { readInput, readStdin } from "../input.js";
 import { parseFailOn, parseProbability } from "../lib.js";
-import { clip, emit, formatProbability, paint, table, usageLine } from "../output.js";
+import { clip, emit, formatProbability, paint, type View } from "../output.js";
 
 export interface ExtractFlags {
   want?: string[];
@@ -68,7 +68,7 @@ export async function extractAction(
 
   if (ctx.dryRun) {
     const { state, questions } = buildExtractRequest({ text, fields, context: flags.context });
-    emit({ ...ctx.output, format: "json" }, { model: ctx.config.model, state, questions }, () => "");
+    emit({ ...ctx.output, format: "json" }, { model: ctx.config.model, state, questions }, () => ({}));
     return EXIT.OK;
   }
 
@@ -77,7 +77,7 @@ export async function extractAction(
   return extractFailed(output, failOn) ? EXIT.JUDGMENT : EXIT.OK;
 }
 
-export function renderExtract(out: ExtractOutput, ctx: CommandContext): string {
+export function renderExtract(out: ExtractOutput, ctx: CommandContext): View {
   const c = ctx.output.color;
   const rows = Object.entries(out.fields).map(([name, f]) => [
     name,
@@ -93,9 +93,10 @@ export function renderExtract(out: ExtractOutput, ctx: CommandContext): string {
         : "auto",
     String(f.candidates),
   ]);
-  const lines = [table([["Field", "Value", "Normalized", "Conf", "Action", "Cands"], ...rows], { color: c })];
-  if (!ctx.output.quiet) lines.push(paint(c, "dim", usageLine(out.usage, out.model, out.provider)));
-  return lines.join("\n");
+  return {
+    table: { columns: ["Field", "Value", "Normalized", "Conf", "Action", "Cands"], rows },
+    usage: { usage: out.usage, model: out.model, provider: out.provider },
+  };
 }
 
 /** Batch: each row's text is extracted with the shared field specs. */

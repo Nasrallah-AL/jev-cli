@@ -19,7 +19,7 @@ import {
 import { CliError, EXIT } from "../errors.js";
 import { parseJson, readInput, readStdin } from "../input.js";
 import { parseFailOn, parseProbability } from "../lib.js";
-import { emit, formatProbability, paint, table, usageLine } from "../output.js";
+import { emit, formatProbability, paint, type View } from "../output.js";
 
 export interface ClassifyFlags {
   labels?: string;
@@ -133,7 +133,7 @@ export async function classifyAction(
           state: text,
           taxonomy: r.taxonomy,
         },
-        () => "",
+        () => ({}),
       );
       return EXIT.OK;
     }
@@ -149,7 +149,7 @@ export async function classifyAction(
     emit(
       { ...ctx.output, format: "json" },
       { model: ctx.config.model, state: built.state, questions: built.questions },
-      () => "",
+      () => ({}),
     );
     return EXIT.OK;
   }
@@ -159,41 +159,58 @@ export async function classifyAction(
   return classifyFailed(output, r.failOn) ? EXIT.JUDGMENT : EXIT.OK;
 }
 
-export function renderClassify(out: AnyClassifyOutput, ctx: CommandContext): string {
+export function renderClassify(out: AnyClassifyOutput, ctx: CommandContext): View {
   const c = ctx.output.color;
-  const lines: string[] = [];
   const dist = (p: Record<string, number>) =>
     Object.entries(p)
       .sort(([, a], [, b]) => b - a)
       .map(([k, v]) => `${k} ${formatProbability(v)}`)
       .join(", ");
+  const usage = { usage: out.usage, model: out.model, provider: out.provider };
   if (out.mode === "single") {
     const action = out.action === "review" ? paint(c, "yellow", "review") : paint(c, "dim", "auto");
-    lines.push(
-      `${paint(c, ["bold", "green"], out.label ?? "?")}  conf ${formatProbability(out.confidence)}  ${action}`,
-    );
-    lines.push(paint(c, "dim", `[${dist(out.probabilities)}]`));
-  } else if (out.mode === "multi") {
+    return {
+      head: [
+        `${paint(c, ["bold", "green"], out.label ?? "?")}  conf ${formatProbability(out.confidence)}  ${action}`,
+        paint(c, "dim", `[${dist(out.probabilities)}]`),
+      ],
+      kv: [
+        ["label", out.label ?? ""],
+        ["confidence", formatProbability(out.confidence)],
+        ["action", out.action],
+        ["probabilities", dist(out.probabilities)],
+      ],
+      usage,
+    };
+  }
+  if (out.mode === "multi") {
     const rows = out.labels.map((l) => [
       l.applies ? paint(c, "green", "yes") : paint(c, "dim", "no"),
       formatProbability(l.probability),
       l.label,
     ]);
-    lines.push(table([["Applies", "Prob", "Label"], ...rows], { color: c }));
-    lines.push(paint(c, "dim", `threshold ≥ ${out.threshold}`));
-  } else {
-    const path = out.path.length ? out.path.join(paint(c, "dim", " > ")) : paint(c, "dim", "(none)");
-    const action = out.action === "review" ? paint(c, "yellow", "review") : paint(c, "dim", "auto");
-    lines.push(
-      `${paint(c, ["bold", "green"], path)}${out.stopped_at_other ? paint(c, "yellow", "  → other") : ""}  conf ${formatProbability(out.confidence)}  ${action}`,
-    );
-    for (const s of out.steps)
-      lines.push(
-        paint(c, "dim", `  ${s.label} ${formatProbability(s.confidence)}  [${dist(s.probabilities)}]`),
-      );
+    return {
+      table: { columns: ["Applies", "Prob", "Label"], rows },
+      tail: [paint(c, "dim", `threshold ≥ ${out.threshold}`)],
+      usage,
+    };
   }
-  if (!ctx.output.quiet) lines.push(paint(c, "dim", usageLine(out.usage, out.model, out.provider)));
-  return lines.join("\n");
+  const path = out.path.length ? out.path.join(paint(c, "dim", " > ")) : paint(c, "dim", "(none)");
+  const action = out.action === "review" ? paint(c, "yellow", "review") : paint(c, "dim", "auto");
+  return {
+    head: [
+      `${paint(c, ["bold", "green"], path)}${out.stopped_at_other ? paint(c, "yellow", "  → other") : ""}  conf ${formatProbability(out.confidence)}  ${action}`,
+      ...out.steps.map((s) =>
+        paint(c, "dim", `  ${s.label} ${formatProbability(s.confidence)}  [${dist(s.probabilities)}]`),
+      ),
+    ],
+    kv: [
+      ["path", out.path.join(" > ")],
+      ["confidence", formatProbability(out.confidence)],
+      ["action", out.action],
+    ],
+    usage,
+  };
 }
 
 /** Batch: each row is classified with the shared label set. */
