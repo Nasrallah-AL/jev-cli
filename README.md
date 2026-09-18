@@ -1,7 +1,7 @@
 # jev-cli
 
 [![CI](https://github.com/Nasrallah-AL/jev-cli/actions/workflows/ci.yml/badge.svg)](https://github.com/Nasrallah-AL/jev-cli/actions/workflows/ci.yml)
-[![npm](https://img.shields.io/npm/v/jev-cli.svg)](https://www.npmjs.com/package/jev-cli)
+[![npm](https://img.shields.io/npm/v/@nasr.shaer/jev-cli.svg)](https://www.npmjs.com/package/@nasr.shaer/jev-cli)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
 Fast, typed AI judgments from the command line, powered by TypeSafe's [Jev](https://docs.typesafe.ai) model.
@@ -39,7 +39,7 @@ You need Node.js 20.12 or newer and a TypeSafe API key.
 2. Install the CLI:
 
    ```bash
-   npm install -g jev-cli
+   npm install -g @nasr.shaer/jev-cli
    ```
 
 3. Export the key and confirm it is picked up:
@@ -51,7 +51,7 @@ You need Node.js 20.12 or newer and a TypeSafe API key.
 
    `jev config` prints the resolved settings and a masked view of the key. It exits 1 if no credentials are found.
 
-To try it without installing, prefix any command with `npx jev-cli` instead of `jev`.
+To try it without installing, prefix any command with `npx @nasr.shaer/jev-cli` instead of `jev`. The installed command is always `jev`.
 
 ## Sixty-second start
 
@@ -394,7 +394,7 @@ jev find "$question" --lines @faq.txt --fail-on absent,partial --json
 The same functions the CLI uses are exported, so you can embed judgments in a script without shelling out.
 
 ```ts
-import { createAsk, runVerify, runScreen, runFind } from "jev-cli";
+import { createAsk, runVerify, runScreen, runFind } from "@nasr.shaer/jev-cli";
 
 const ask = createAsk({ provider: "auto", model: "jev-latest", timeoutMs: 30_000 });
 

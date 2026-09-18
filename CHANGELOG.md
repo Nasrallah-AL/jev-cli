@@ -9,7 +9,7 @@ breaking changes to flags or JSON output; they are called out below.
 
 ## [0.1.0] - 2026-09-18
 
-Initial release.
+Initial release, published to npm as `@nasr.shaer/jev-cli` (the unscoped name is blocked as too similar to an existing package). The installed command is `jev`.
 
 ### Added
 

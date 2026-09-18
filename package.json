@@ -1,5 +1,5 @@
 {
-  "name": "jev-cli",
+  "name": "@nasr.shaer/jev-cli",
   "version": "0.1.0",
   "description": "Fast, typed judgments from TypeSafe's Jev model at the command line: verify claims against evidence, screen text for prompt injection, rank candidates by meaning, or ask raw System One questions.",
   "type": "module",
