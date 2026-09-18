@@ -47,7 +47,7 @@ test/
 Adding a command: `src/core/<name>.ts` (pure, takes `AskFn`), `src/commands/<name>.ts` (flags, rendering, and a
 `prepare<Name>Batch` if it takes one text input), register it in `src/cli.ts` and `BATCHABLE` in
 `src/commands/batch.ts`, export from `src/index.ts`, add `test/commands/<name>.test.ts` with both describes,
-document it in README and `plugin/skills/jev/SKILL.md`.
+add `docs/<name>.md`, a row in the README command table, and a section in `plugin/skills/jev/SKILL.md`.
 
 Keep question design (instructions and criteria) in `src/core/`. Keep policy (thresholds, exit codes) in code, not in prompts. Anything a script may depend on, such as JSON field names and exit codes, is a public contract: note changes in `CHANGELOG.md`.
 
@@ -62,7 +62,7 @@ Code function-hook type reference in `plugin/hooks/types/`.
 ## Pull requests
 
 - One change per PR, with tests. CLI-visible changes get a case in the command's `test/commands/<name>.test.ts`.
-- Update `README.md` for new flags or output fields, and add an entry under `Unreleased` in `CHANGELOG.md`.
+- Docs: each command has one page in `docs/<command>.md` with the same sections (synopsis, when to use, options, output, example). Update it for new flags or output fields; keep `README.md` to the command index and conventions. Add an entry under `Unreleased` in `CHANGELOG.md`.
 - CI must pass: typecheck, lint, tests on Node 20 and 22.
 
 ## Releasing

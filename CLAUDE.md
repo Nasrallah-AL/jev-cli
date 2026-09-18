@@ -1,6 +1,6 @@
 # CLAUDE.md
 
-TypeScript CLI (`jev`, npm package `jevctl`) wrapping TypeSafe's Jev model. Commands: `verify`, `screen`, `find`, `ask`, `classify`, `extract`, `rerank`, `match`, `route`, `compact`, `batch`, `auth`. Full user docs in `README.md`; layout and PR rules in `CONTRIBUTING.md`.
+TypeScript CLI (`jev`, npm package `jevctl`) wrapping TypeSafe's Jev model. Commands: `verify`, `screen`, `find`, `ask`, `classify`, `extract`, `rerank`, `match`, `route`, `compact`, `batch`, `auth`. `README.md` is a short front door; per-command docs live in `docs/<command>.md`, one identical layout each. Layout and PR rules in `CONTRIBUTING.md`.
 
 ## Commands
 
@@ -20,7 +20,7 @@ npm run test:e2e     # live API; needs TYPESAFE_API_KEY. Not run in CI unless th
 
 - Question design (instructions, criteria) lives only in `src/core/`. Policy (thresholds, exit codes, `--fail-on`) lives in code, never in prompts.
 - `core/` functions take an `AskFn`; they must not read env, files, or `process`. That is what makes them testable without a key.
-- Public contract: JSON field names, exit codes (`0` ok, `1` error, `2` judgment matched), flag names. Changing any of these needs a `CHANGELOG.md` entry under `Unreleased` and a README update.
+- Public contract: JSON field names, exit codes (`0` ok, `1` error, `2` judgment matched), flag names. Changing any of these needs a `CHANGELOG.md` entry under `Unreleased` and an update to `docs/<command>.md`.
 - Ids sent to the model are sanitized; always report the caller's original id back (see `originalIds` in `lib.ts`).
 - Tests never hit the network. One file per command in `test/commands/`, with a `core` describe (fake `AskFn`) and a `cli` describe (spawned binary via `test/helpers/cli.ts`). Name tests after the capability, never after the delivery batch.
 - `src/vendor/compaction/` is vendored upstream code: change import paths only, keep `plugin/hooks/compaction/` in sync (`npm run sync:hooks`), never reformat it.
