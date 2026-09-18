@@ -75,7 +75,7 @@ Credentials (first found wins unless --provider is set; environment first, then 
   OPENROUTER_API_KEY (sk-or-...)                  OpenRouter Decisions API
   CLOUDFLARE_API_TOKEN + CLOUDFLARE_ACCOUNT_ID    Cloudflare Workers AI
 
-Docs: https://docs.typesafe.ai   Per-command help: jev <command> --help`;
+Website: https://jevcli.vectorz.app   Docs: https://docs.typesafe.ai   Per-command help: jev <command> --help`;
 
 export function createProgram(): Command {
   const program = new Command();

@@ -9,7 +9,7 @@
     "type": "git",
     "url": "git+https://github.com/Nasrallah-AL/jev-cli.git"
   },
-  "homepage": "https://github.com/Nasrallah-AL/jev-cli#readme",
+  "homepage": "https://jevcli.vectorz.app/",
   "bugs": "https://github.com/Nasrallah-AL/jev-cli/issues",
   "bin": {
     "jev": "dist/cli.js"
