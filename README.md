@@ -1,6 +1,6 @@
 # jev-cli
 
-[![CI](https://github.com/nasrshaer/jev-cli/actions/workflows/ci.yml/badge.svg)](https://github.com/nasrshaer/jev-cli/actions/workflows/ci.yml)
+[![CI](https://github.com/Nasrallah-AL/jev-cli/actions/workflows/ci.yml/badge.svg)](https://github.com/Nasrallah-AL/jev-cli/actions/workflows/ci.yml)
 [![npm](https://img.shields.io/npm/v/jev-cli.svg)](https://www.npmjs.com/package/jev-cli)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 

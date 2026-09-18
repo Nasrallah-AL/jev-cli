@@ -34,7 +34,7 @@ export interface ProviderOptions {
 }
 
 const USER_AGENT = "jev-cli";
-const REFERER = "https://github.com/nasrshaer/jev-cli";
+const REFERER = "https://github.com/Nasrallah-AL/jev-cli";
 
 /** OpenRouter has no `latest` alias; map it to the current pinned release. */
 export const OPENROUTER_LATEST = "jev-1.13";

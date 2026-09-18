@@ -5,7 +5,7 @@ Thanks for helping improve jev-cli. Issues and pull requests are welcome.
 ## Setup
 
 ```bash
-git clone https://github.com/nasrshaer/jev-cli
+git clone https://github.com/Nasrallah-AL/jev-cli
 cd jev-cli
 npm install
 npm run check
