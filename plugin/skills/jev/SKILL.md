@@ -64,6 +64,8 @@ When you are writing a report for the user, `--md -q` gives a ready-to-paste Mar
 
 Exit 2 is a normal result, not an error. Read the JSON to see why.
 
+A `Malformed response from <model>` error (exit 1) means the API did not answer every question; retry, do not read it as a negative result.
+
 ## Passing input
 
 Any value accepts `literal text`, `@path/to/file`, or `-` for stdin. Only one `-` per command.
@@ -123,7 +125,7 @@ jev find "refund policy" --lines @terms.txt --json
 jev find "$question" --candidates @items.json --json --fail-on none
 ```
 
-Candidates: `--files <paths...>` (id = path), `--lines @file` (id = `L<n>`), or `--candidates`
+Candidates: `--files <paths...>` (id = path), `--lines @file` (id = `L<line number>`, blank lines counted), or `--candidates`
 JSON as `["text", ...]`, `[{"id","text"}]`, or `{"id": "text"}`. Max 250 per call; each text is
 truncated at 2,000 chars, so pass files of moderate size or pre-split them.
 
@@ -180,7 +182,7 @@ guaranteed to fit. Put domain rules in label descriptions.
 ### extract: pull values without hallucination
 
 ```bash
-jev extract @invoice.txt --want amount,date --want invoice=/INV-\d+/:the invoice number --context "supplier invoice" --json
+jev extract @invoice.txt --want amount,date --want "invoice=/INV-\d+/:the invoice number" --context "supplier invoice" --json
 jev extract @email.txt --want "sender=email:the sender" --want "reply_by=date:the reply deadline" --json
 ```
 
@@ -209,7 +211,7 @@ jev match --dedupe @items.json --kind "customer contacts" --json
 jev match --left @ours.json --right @theirs.json --kind "products" --json
 ```
 
-Result per pair: `decision` (`same` | `unclear` | `different`), `confidence`, `probabilities`.
+Result per pair: `left`/`right` ids, `left_text`/`right_text`, `decision` (`same` | `unclear` | `different`), `confidence`, `probabilities`.
 Treat `unclear` as a real outcome that needs a person, not as a weak `same`. Limit 200 pairs;
 block large sets first.
 

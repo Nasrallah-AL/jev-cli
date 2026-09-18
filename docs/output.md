@@ -32,7 +32,7 @@ jev extract @inv.txt --want amount --pluck fields.amount.normalized.value
 jev route "$msg" -H refund,cancel --pluck handler --fail-on unrouted && echo routed
 ```
 
-Scalars print raw, arrays print one element per line, objects print as compact JSON. Combine with `--json` to get the plucked value as pretty JSON. Exit codes are unchanged, so `--pluck` works inside `$(...)` and `if`.
+Scalars print raw, arrays print one element per line, objects print as compact JSON. Combine with `--json` to get the plucked value as pretty JSON. Exit codes are unchanged, so `--pluck` works inside `$(...)` and `if`. A path that matches nothing is an error (exit 1) so a typo cannot read as an empty value; `batch` rows are the exception and print an empty line.
 
 ## batch
 

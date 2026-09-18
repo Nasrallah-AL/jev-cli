@@ -9,7 +9,7 @@ Settings resolve in this order, later wins: built-in defaults, config file, envi
 | `jev config` or `jev config show` | Effective settings, masked credentials, key sources, resolved provider. Exit 1 if no provider can be resolved. |
 | `jev config path` | Print the config file location |
 | `jev config init` | Write a file with the defaults |
-| `jev config set <key> <value>` | Set one value, e.g. `jev config set screen.blockAt 0.6` |
+| `jev config set <key> <value>` | Set one value, e.g. `jev config set screen.blockAt 0.6`. Unknown keys and out-of-range values are rejected. |
 | `jev config unset <key>` | Remove a top-level key |
 | `jev config reset` | Delete the file |
 

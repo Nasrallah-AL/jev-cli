@@ -58,17 +58,16 @@ Each command has its own page with options, output fields, and examples.
 
 ## Conventions
 
-Every command follows the same rules, so learn them once.
+Same rules for every command. Details in [docs/output.md](docs/output.md) and [docs/config.md](docs/config.md).
 
-**Input.** Any value can be literal text, `@path` to read a file, or `-` for stdin. `@@text` is a literal starting with `@`. One `-` per command.
-
-**Output.** A table for humans by default. `--json` for scripts, `--md` for PR comments and job summaries, `--format csv|tsv|jsonl` for spreadsheets and pipelines, `--pluck <path>` for one value (`--pluck label`). JSON always carries `command`, `model`, `provider`, and `usage`, plus the command's fields; field names are a stable contract. See [Output formats](docs/output.md).
-
-**Exit codes.** `0` success. `1` usage, config, input, or network error (details on stderr). `2` the command ran and a `--fail-on` condition matched, for example a contradicted claim or a blocked page. Code 2 is what makes `jev` a gate in `&&` chains, hooks, and CI.
-
-**Thresholds.** Defaults come from TypeSafe's cookbooks. Treat them as starting points: run over a sample of your data with `--json`, look at the distributions, and tune with the flags or in [config](docs/config.md).
-
-**Global flags.** `--json`, `--md`, `--format`, `--pluck`, `--dry-run`, `-m/--model`, `-P/--provider`, `--timeout`, `-q/--quiet`, `--no-color`. They work before or after the subcommand.
+| | Rule |
+| --- | --- |
+| Input | Any value is literal text, `@path` for a file, or `-` for stdin (one per command). `@@x` is a literal starting with `@`. |
+| Output | Table by default. `--json` for scripts, `--md` for PR comments, `--format csv\|tsv\|jsonl`, `--pluck <path>` for one value. JSON field names are a stable contract. |
+| Exit codes | `0` ok · `1` usage, config, input, or network error (stderr) · `2` a `--fail-on` condition matched. Code 2 makes `jev` a gate in `&&`, hooks, and CI. |
+| Thresholds | Defaults follow TypeSafe's cookbooks. Sample your data with `--json`, then tune via flags or [config](docs/config.md). |
+| Global flags | `--json` `--md` `--format` `--pluck` `--dry-run` `-m` `-P` `--timeout` `-q` `--no-color`, before or after the subcommand. |
+| Errors | One line on stderr, exit 1. A response that is not one answer per question is `Malformed response`, never a silent pass. |
 
 ## Claude Code plugin
 
