@@ -22,6 +22,7 @@ Jev does not generate text. You give it some content and a question with a fixed
 | `jev match` | Do these two records describe the same thing? | Dedupe contacts, align catalogs, merge duplicates |
 | `jev route` | Which handler should take this request, with which arguments? | Turn free text into a typed command for a script or bot |
 | `jev batch` | The same question over many rows | Run any of the above over a file at scale, with JSONL output |
+| `jev compact` | Which old tool calls and results in this transcript still matter? | Shrink an agent's context without summarizing; also runs in-session as a Claude Code hook |
 
 Every command prints a readable table by default, full JSON with `--json`, and an exit code you can branch on.
 
@@ -406,6 +407,45 @@ jev batch screen -i @pages.jsonl -o results.jsonl --concurrency 8 -- --purpose "
 jev batch verify -i @claims.txt -- --evidence @spec.md --fail-on contradicted,unsupported
 ```
 
+### `jev compact`
+
+Shrinks an agent transcript without summarizing anything. Most compaction asks an LLM to summarize old turns, and a summary can silently lose a file path, an exact error, or a constraint. `jev compact` instead shows Jev the whole conversation and asks, for every tool call outside the pinned first and newest messages, two yes/no questions: does knowing this call was made still matter, and does its full output still need to stay verbatim. Stale results are cut to a short head plus a note, stale calls are removed, and everything else is returned as it was. User and assistant text is never touched.
+
+```bash
+jev compact [transcript] [options]
+```
+
+| Input | Form |
+| --- | --- |
+| Claude Code session log | `@~/.claude/projects/<project>/<session>.jsonl` |
+| Messages JSON | `[{"role","text","toolUses":[{"tool_use_id","tool","input"}],"toolResults":[{"tool_use_id","text"}]}]` |
+
+| Option | Meaning | Default |
+| --- | --- | --- |
+| `-g, --goal <text>` | The ongoing task, so Jev knows what still matters | last three user prompts |
+| `--keep-threshold <p>` | Keep a call or result when Jev's probability is at least this | `0.5` |
+| `--preserve-recent <n>` | Newest messages never touched (the first is always kept) | `6` |
+| `--max-state-tokens <n>` | Budget for the history sent to Jev; fitted in stages, never summarized | `25000` |
+| `--max-request-tokens <n>` | Budget for history plus one batch of questions; more questions mean more requests | `30000` |
+| `--truncate-head <n>` | Characters kept from a dropped result before its note | `300` |
+| `--min-reduction <p>` | Below this ratio the result is flagged `worth_it: false` | `0.25` |
+| `-o, --out <path>` | Write the compacted transcript as messages JSON | |
+| `--fail-on <list>` | Exit 2 on `low-reduction` | `none` |
+
+```text
+$ jev compact @session.jsonl --out compacted.json
+61% smaller  528 → 341 messages · 1,204,311 → 470,902 chars
+209 tool calls: 58 kept · 71 results truncated · 77 calls dropped · 3 pinned · state ~24944 tokens (old messages collapsed) in 5 request(s), 2140 ms
+
+Call  Tool    Action    P(call)  P(result)
+----  ------  --------  -------  ---------
+t1    Bash    truncate  0.91     0.12
+t2    Read    drop      0.08     0.03
+...
+```
+
+The same procedure runs in-session through the Claude Code plugin's hook, replacing the built-in compaction summary. See [Claude Code plugin](#claude-code-plugin). Adapted from [fast-jev-compaction](https://github.com/tamaratran/fast-jev-compaction).
+
 ### `jev models`
 
 Lists the models your account can use, with release dates. Requires the TypeSafe provider.
@@ -483,7 +523,8 @@ The config file lives at `$JEV_CONFIG` if set, else `$XDG_CONFIG_HOME/jev/config
   "extract": { "minConfidence": 0.6 },
   "batch": { "concurrency": 4 },
   "rerank": { "topK": 10, "min": 0.5 },
-  "route": { "minConfidence": 0.6 }
+  "route": { "minConfidence": 0.6 },
+  "compact": { "keepThreshold": 0.5, "preserveRecent": 6, "maxStateTokens": 25000, "maxRequestTokens": 30000, "truncateHead": 300, "minReduction": 0.25 }
 }
 ```
 
@@ -586,6 +627,12 @@ jev match --dedupe @contacts.json --kind "customer contacts" --json \
 jev route "$message" --handlers-json @handlers.json --fail-on unrouted --json | jq '{handler, args}'
 ```
 
+**Compact a Claude Code session offline and inspect what would go.**
+
+```bash
+jev compact @~/.claude/projects/-Users-me-repo/$SESSION.jsonl --json | jq '.decisions[] | select(.action != "keep") | {id, tool, action}'
+```
+
 **Find the right file, then open it.**
 
 ```bash
@@ -643,6 +690,14 @@ claude plugin install jev@jev-cli
 ```
 
 Once installed, Claude will screen fetched pages before reading them, fact-check its own summaries against sources, and use `jev find` instead of grepping when a query is about meaning. See [plugin/README.md](plugin/README.md).
+
+**Compaction hook.** The plugin also ships a function hook that replaces Claude Code's compaction summary with `jev compact`'s verbatim procedure, and requests compaction when context usage reaches 60%. Function hooks are early access, so enable them and provide the key in `~/.claude/settings.json`:
+
+```json
+{ "env": { "CLAUDE_CODE_ENABLE_FUNCTION_HOOKS": "1", "TYPESAFE_API_KEY": "<your key>" } }
+```
+
+The hook is on by default once installed; set the plugin option `compaction` to `false` to turn it off, or `compactAtPercent` to `0` to leave timing to Claude Code. On every compaction you get a toast with the reduction and decision counts, or a fallback notice when Jev is unavailable or the reduction is too small. Details and all options: [plugin/hooks/README.md](plugin/hooks/README.md).
 
 ## Development
 

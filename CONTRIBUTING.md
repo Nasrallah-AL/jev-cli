@@ -51,6 +51,14 @@ document it in README and `plugin/skills/jev/SKILL.md`.
 
 Keep question design (instructions and criteria) in `src/core/`. Keep policy (thresholds, exit codes) in code, not in prompts. Anything a script may depend on, such as JSON field names and exit codes, is a public contract: note changes in `CHANGELOG.md`.
 
+## Vendored code
+
+`src/vendor/compaction/` is fast-jev-compaction (MIT), lightly adapted (import paths only). It is excluded
+from Biome formatting so diffs against upstream stay readable. The plugin needs its own copy at
+`plugin/hooks/compaction/` because a plugin folder cannot import from outside itself; `npm run sync:hooks`
+refreshes it and `npm run check` fails on drift. `npm run typecheck:hooks` checks the hook against the Claude
+Code function-hook type reference in `plugin/hooks/types/`.
+
 ## Pull requests
 
 - One change per PR, with tests. CLI-visible changes get a case in the command's `test/commands/<name>.test.ts`.

@@ -16,6 +16,8 @@ breaking changes to flags or JSON output; they are called out below.
 - `jev match`: same/unclear/different decision per pair from a three-level Score; `--pairs`, `--left/--right` cross product, `--dedupe`; chunked requests up to 200 pairs.
 - `jev route`: handler Choice with a built-in `none` plus speculative typed argument questions (choice/noul/score) per handler in one request; `-H` shorthand or `--handlers-json`; `--fail-on review,unrouted`.
 - `batch` also accepts `rerank` and `route`.
+- `jev compact`: verbatim context compaction for agent transcripts (Claude Code session `.jsonl` or messages JSON). Jev decides per tool call whether the call and its result still matter; nothing is summarized. `--out`, `--goal`, thresholds, `--fail-on low-reduction`. Vendors [fast-jev-compaction](https://github.com/tamaratran/fast-jev-compaction) (MIT) under `src/vendor/compaction/`.
+- Claude Code plugin: `session.compact` / `turn.complete` function hook that replaces the built-in compaction summary with the same procedure; `userConfig` options for thresholds and a `compaction` master switch. Requires `CLAUDE_CODE_ENABLE_FUNCTION_HOOKS=1`.
 - Config sections `classify`, `extract`, `batch`, `rerank`, `route`.
 
 - Claude Code plugin (`plugin/`) with the `jev` skill and `/jev:verify`, `/jev:screen`, `/jev:find`, `/jev:ask` commands; installable via `claude plugin marketplace add Nasrallah-AL/jev-cli`.

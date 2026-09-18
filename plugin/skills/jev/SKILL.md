@@ -10,7 +10,8 @@ description: >
   (jev ask or jev classify); pull emails, amounts, dates, or ids out of a document without
   hallucination (jev extract); re-order search results by relevance (jev rerank); decide whether
   two records are the same entity (jev match); turn a request into a handler plus typed arguments
-  (jev route); or run any of these over many rows at once (jev batch). Each call
+  (jev route); shrink a long agent transcript without summarizing it (jev compact); or run any of these
+  over many rows at once (jev batch). Each call
   takes a few hundred milliseconds and a fraction of a cent, returns
   probabilities and a confidence, and sets an exit code. Prefer it over long chain-of-thought
   for these mechanical checks, and over embeddings or grep for meaning-based lookups.
@@ -219,6 +220,19 @@ jev route "$text" -H "refund:money back,cancel:stop an order,support" --json
 Result: `handler` (or `null` with `action: "none"`), `confidence`, `action`, `args.<name>.value`.
 Define handlers with `args` of type `choice` (options), `noul` (yes/no), or `score` (levels) and
 `route` fills them in the same call. Use it to turn free text into a call you can make in code.
+
+### compact: shrink a transcript without summarizing
+
+```bash
+jev compact @session.jsonl --out compacted.json --json
+```
+
+Reads a Claude Code session log or a messages JSON array. Jev decides per old tool call whether the
+call and whether its full output still matter; stale results are truncated, stale calls removed,
+text is never touched. Result: `reduction`, `worth_it`, `stats`, `decisions[]` (`id`, `tool`,
+`action`, `keepCall`, `keepResult`), `messages` (the compacted transcript). Use it to audit or
+pre-shrink a transcript before handing it to another agent. The plugin's hook applies the same
+procedure automatically in-session when function hooks are enabled.
 
 ### batch: many rows, one command
 

@@ -29,6 +29,16 @@ export const partialConfigSchema = z.object({
   batch: z.object({ concurrency: z.number().int().min(1).max(64).optional() }).optional(),
   rerank: z.object({ topK: z.number().int().min(1).max(250).optional(), min: prob.optional() }).optional(),
   route: z.object({ minConfidence: prob.optional() }).optional(),
+  compact: z
+    .object({
+      keepThreshold: prob.optional(),
+      preserveRecent: z.number().int().min(0).optional(),
+      maxStateTokens: z.number().int().positive().optional(),
+      maxRequestTokens: z.number().int().positive().optional(),
+      truncateHead: z.number().int().min(0).optional(),
+      minReduction: prob.optional(),
+    })
+    .optional(),
 });
 
 /** Fully resolved config with defaults. */
@@ -53,6 +63,16 @@ export const configSchema = z.object({
     .object({ topK: z.number().int().min(1).max(250).default(10), min: prob.default(0.5) })
     .prefault({}),
   route: z.object({ minConfidence: prob.default(0.6) }).prefault({}),
+  compact: z
+    .object({
+      keepThreshold: prob.default(0.5),
+      preserveRecent: z.number().int().min(0).default(6),
+      maxStateTokens: z.number().int().positive().default(25_000),
+      maxRequestTokens: z.number().int().positive().default(30_000),
+      truncateHead: z.number().int().min(0).default(300),
+      minReduction: prob.default(0.25),
+    })
+    .prefault({}),
 });
 
 export type JevConfig = z.infer<typeof configSchema>;

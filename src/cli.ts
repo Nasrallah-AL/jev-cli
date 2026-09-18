@@ -6,6 +6,7 @@ import { Command } from "commander";
 import { registerAsk } from "./commands/ask.js";
 import { registerBatch } from "./commands/batch.js";
 import { registerClassify } from "./commands/classify.js";
+import { registerCompact } from "./commands/compact.js";
 import { registerConfig } from "./commands/config.js";
 import { registerExtract } from "./commands/extract.js";
 import { registerFind } from "./commands/find.js";
@@ -69,6 +70,7 @@ Docs: https://docs.typesafe.ai`,
   registerRerank(program, run);
   registerMatch(program, run);
   registerRoute(program, run);
+  registerCompact(program, run);
   registerBatch(program, run);
   registerModels(program, run);
   registerConfig(program, run);

@@ -1,11 +1,11 @@
 # CLAUDE.md
 
-TypeScript CLI (`jev`, npm package `jevctl`) wrapping TypeSafe's Jev model. Commands: `verify`, `screen`, `find`, `ask`, `classify`, `extract`, `rerank`, `match`, `route`, `batch`. Full user docs in `README.md`; layout and PR rules in `CONTRIBUTING.md`.
+TypeScript CLI (`jev`, npm package `jevctl`) wrapping TypeSafe's Jev model. Commands: `verify`, `screen`, `find`, `ask`, `classify`, `extract`, `rerank`, `match`, `route`, `compact`, `batch`. Full user docs in `README.md`; layout and PR rules in `CONTRIBUTING.md`.
 
 ## Commands
 
 ```bash
-npm run check        # typecheck + lint + tests. Run before every commit.
+npm run check        # typecheck (+ plugin hook), vendor sync check, lint, tests. Run before every commit.
 npm test             # vitest; builds dist/ first, then spawns the CLI against a fake API
 npm run lint:fix     # Biome format + safe fixes
 npm run dev -- <args>            # run from source, e.g. npm run dev -- screen "hi" --dry-run
@@ -23,6 +23,7 @@ npm run test:e2e     # live API; needs TYPESAFE_API_KEY. Not run in CI unless th
 - Public contract: JSON field names, exit codes (`0` ok, `1` error, `2` judgment matched), flag names. Changing any of these needs a `CHANGELOG.md` entry under `Unreleased` and a README update.
 - Ids sent to the model are sanitized; always report the caller's original id back (see `originalIds` in `lib.ts`).
 - Tests never hit the network. One file per command in `test/commands/`, with a `core` describe (fake `AskFn`) and a `cli` describe (spawned binary via `test/helpers/cli.ts`). Name tests after the capability, never after the delivery batch.
+- `src/vendor/compaction/` is vendored upstream code: change import paths only, keep `plugin/hooks/compaction/` in sync (`npm run sync:hooks`), never reformat it.
 - No `Co-Authored-By` or tool attribution in commits.
 
 ## Releasing
