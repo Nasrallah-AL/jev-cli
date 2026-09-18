@@ -24,7 +24,7 @@ Limit: 200 pairs per call, sent in groups of 50. For large sets, block first (by
 
 ## Output
 
-`results[]` with `left`, `right`, `decision`, `confidence`, `probabilities` (`different`, `unclear`, `same`); `summary` counts.
+`results[]` with `left`, `right` (ids), `left_text`, `right_text`, `decision`, `confidence`, `probabilities` (`different`, `unclear`, `same`); `summary` counts.
 
 `unclear` is a real outcome meaning a person should look, not a weak `same`.
 

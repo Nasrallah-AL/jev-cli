@@ -31,6 +31,10 @@ describe("ask: core", () => {
     expect(() => splitOptions("no options")).toThrow(/Missing options/);
   });
 
+  test("questionsFromFlags rejects a question id used twice", () => {
+    expect(() => questionsFromFlags({ noul: ["a=q1", "a=q2"] })).toThrow(/"a" is used twice/);
+  });
+
   test("questionsFromFlags builds all three primitives", () => {
     const q = questionsFromFlags({
       noul: ["urgent=Is it urgent?"],

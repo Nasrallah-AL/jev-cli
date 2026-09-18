@@ -86,6 +86,20 @@ describe("compact: transcript adapter", () => {
     expect(t.messages[4]!.toolResults).toEqual([{ tool_use_id: "toolu_2", text: "FAIL", isError: true }]);
   });
 
+  test("messages JSON may omit text and toolUses; they default to empty", () => {
+    const t = parseTranscript(
+      JSON.stringify([
+        { role: "user", text: "go" },
+        { role: "assistant", toolUses: [{ tool_use_id: "t1", tool: "Read", input: {} }] },
+        { role: "user", toolResults: [{ tool_use_id: "t1", text: "result" }] },
+      ]),
+    );
+    expect(t.format).toBe("messages-json");
+    expect(t.messages[0]!.toolUses).toEqual([]);
+    expect(t.messages[2]!.text).toBe("");
+    expect(t.messages[2]!.toolResults).toHaveLength(1);
+  });
+
   test("accepts a messages JSON array and rejects other shapes", () => {
     const t = parseTranscript(JSON.stringify(transcript()));
     expect(t.format).toBe("messages-json");

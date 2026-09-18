@@ -10,8 +10,8 @@ import { resolveProvider } from "../provider.js";
 /** Mask a secret to its first four and last two characters. */
 export function mask(secret: string | undefined): string | null {
   if (!secret) return null;
-  if (secret.length <= 8) return "*".repeat(secret.length);
-  return `${secret.slice(0, 4)}…${secret.slice(-2)}`;
+  // Show only the last four characters, regardless of source, so env and stored keys look alike.
+  return secret.length > 8 ? `…${secret.slice(-4)}` : "********";
 }
 
 export function credentialReport(env: NodeJS.ProcessEnv) {

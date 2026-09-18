@@ -103,6 +103,28 @@ describe("match: core", () => {
   });
 });
 
+describe("match: result text", () => {
+  test("every result carries the pair text next to the ids", async () => {
+    const { ask } = fakeAsk((qs) =>
+      Object.fromEntries(
+        Object.keys(qs).map((k) => [
+          k,
+          { type: "score", score: 2, probabilities: { "0": 0, "1": 0, "2": 1 }, confidence: 0.9 },
+        ]),
+      ),
+    );
+    const out = await runMatch(ask, {
+      pairs: [{ left: { text: "Acme" }, right: { id: "r9", text: "ACME Inc" } }],
+    });
+    expect(out.results[0]).toMatchObject({
+      left: "left0",
+      right: "r9",
+      left_text: "Acme",
+      right_text: "ACME Inc",
+    });
+  });
+});
+
 describe("match: cli", () => {
   // autoAnswer for score: last level most likely (0.7) -> "same" everywhere, confidence 0.7
   const h = cliHarness();
@@ -113,7 +135,7 @@ describe("match: cli", () => {
     const r = await h.run(["match", "--dedupe", `@${file}`, "--kind", "companies", "--fail-on", "same"]);
     expect(r.code).toBe(2);
     expect(r.stdout).toContain("3 same · 0 unclear · 0 different");
-    expect(r.stdout).toMatch(/same\s+0\.70\s+item1\s+item2/);
+    expect(r.stdout).toMatch(/same\s+0\.70\s+item1: Acme Inc\s+item2: ACME Incorporated/);
     const sent = h.api().requests[0]!.body as { questions: object; state: { kind: string } };
     expect(Object.keys(sent.questions)).toHaveLength(3);
     expect(sent.state.kind).toBe("companies");

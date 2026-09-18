@@ -11,7 +11,7 @@ import {
   runFind,
 } from "../core/find.js";
 import { CliError, EXIT } from "../errors.js";
-import { nonEmptyLines, parseItems, readFile, readInput } from "../input.js";
+import { parseItems, readFile, readInput } from "../input.js";
 import { MAX_CANDIDATES, parseFailOn, parseProbability } from "../lib.js";
 import { clip, emit, formatProbability, paint, type View } from "../output.js";
 
@@ -39,10 +39,13 @@ export function collectCandidates(flags: FindFlags): CandidateInput[] {
     items.push({ id: path, text: readFile(path, "candidate file") });
   }
   if (flags.lines) {
-    const lines = nonEmptyLines(readInput(flags.lines, "lines"));
-    lines.forEach((line, i) => {
-      items.push({ id: `L${i + 1}`, text: line });
-    });
+    // Ids are source line numbers (1-based, blank lines counted) so a hit can be found in the file.
+    readInput(flags.lines, "lines")
+      .split(/\r?\n/)
+      .forEach((raw, i) => {
+        const line = raw.trim();
+        if (line.length > 0) items.push({ id: `L${i + 1}`, text: line });
+      });
   }
   if (items.length === 0) {
     throw new CliError("Provide candidates with --candidates <ref>, --files <paths...>, or --lines <ref>.");
@@ -109,7 +112,10 @@ export function registerFind(
       "JSON candidates (@file or -): array of strings, array of {id,text}, or {id: text}",
     )
     .option("-f, --files <paths...>", "treat each file as a candidate (id = path)")
-    .option("-l, --lines <ref>", "treat each non-empty line of @file or - as a candidate (id = L<n>)")
+    .option(
+      "-l, --lines <ref>",
+      "treat each non-empty line of @file or - as a candidate (id = L<line number>)",
+    )
     .option("-k, --top-k <n>", "how many ranked results to return (default 5)")
     .option("--found <p>", "exists probability at or above which the verdict is 'answered' (default 0.7)")
     .option("--absent <p>", "exists probability below which the verdict is 'absent' (default 0.35)")

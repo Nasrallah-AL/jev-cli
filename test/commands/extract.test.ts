@@ -19,6 +19,14 @@ describe("extract: core", () => {
     expect(() => parseFieldSpec("bad name=email")).toThrow(/Field name/);
   });
 
+  test("number: a hyphen glued to a word is not a minus sign", () => {
+    expect(findCandidates("Invoice INV-20931 total 12, balance -7", parseFieldSpec("number"))).toEqual([
+      "20931",
+      "12",
+      "-7",
+    ]);
+  });
+
   test("findCandidates dedupes and keeps order", () => {
     expect(findCandidates("a@x.com b@y.org a@x.com", parseFieldSpec("email"))).toEqual([
       "a@x.com",

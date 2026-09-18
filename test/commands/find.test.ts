@@ -63,6 +63,15 @@ describe("find: core", () => {
   });
 });
 
+describe("find: core thresholds", () => {
+  test("rejects --absent above --found", async () => {
+    const { ask } = fakeAsk({ best: pick("a"), exists: yes(0.5) });
+    await expect(
+      runFind(ask, { query: "q", candidates: [{ id: "a", text: "t" }], topK: 1, found: 0.3, absent: 0.7 }),
+    ).rejects.toThrow(/--absent \(0.7\) must not exceed --found \(0.3\)/);
+  });
+});
+
 describe("find: cli", () => {
   const h = cliHarness({
     best: {
@@ -114,7 +123,7 @@ describe("find: cli", () => {
     expect(r.stdout.split("\n").find((l) => l.startsWith("1 "))).toContain("auth");
   });
 
-  test("--lines assigns L<n> ids; --fail-on absent exits 2", async () => {
+  test("--lines ids are source line numbers, blank lines counted; --fail-on absent exits 2", async () => {
     const absentApi = await startFakeApi(autoAnswer({ exists: yes(0.05) }));
     try {
       const r = await h.run(["find", "q", "--lines", "-", "--fail-on", "absent", "--json"], {
@@ -124,7 +133,7 @@ describe("find: cli", () => {
       expect(r.code).toBe(2);
       const out = JSON.parse(r.stdout);
       expect(out.exists_verdict).toBe("absent");
-      expect(out.top.map((x: { id: string }) => x.id)).toEqual(["L1", "L2"]);
+      expect(out.top.map((x: { id: string }) => x.id)).toEqual(["L1", "L3"]);
     } finally {
       await absentApi.close();
     }

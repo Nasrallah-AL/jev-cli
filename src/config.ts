@@ -176,9 +176,27 @@ export function setConfigValue(current: PartialConfig, dottedKey: string, rawVal
     cursor = cursor[segment] as Record<string, unknown>;
   }
   cursor[path[path.length - 1]!] = coerce(rawValue);
+  const known = knownConfigKeys();
+  if (!known.has(dottedKey)) {
+    throw new CliError(`Unknown config key "${dottedKey}". Known keys: ${[...known].join(", ")}.`);
+  }
   const result = partialConfigSchema.safeParse(next);
   if (!result.success) throw new CliError(`Cannot set ${dottedKey}: ${formatZodError(result.error)}`);
   return result.data;
+}
+
+/** Every settable dotted key, derived from the schema so the list cannot drift. */
+export function knownConfigKeys(): Set<string> {
+  const keys = new Set<string>();
+  const walk = (shape: Record<string, z.ZodType>, prefix: string) => {
+    for (const [k, v] of Object.entries(shape)) {
+      const inner = v instanceof z.ZodOptional ? v.unwrap() : v;
+      if (inner instanceof z.ZodObject) walk(inner.shape as Record<string, z.ZodType>, `${prefix}${k}.`);
+      else keys.add(`${prefix}${k}`);
+    }
+  };
+  walk(partialConfigSchema.shape as Record<string, z.ZodType>, "");
+  return keys;
 }
 
 function coerce(raw: string): unknown {

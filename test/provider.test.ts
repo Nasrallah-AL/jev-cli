@@ -1,7 +1,14 @@
 import { describe, expect, test, vi } from "vitest";
-import { createAsk, OPENROUTER_LATEST, providerModel, resolveProvider } from "../src/provider.js";
+import {
+  createAsk,
+  OPENROUTER_LATEST,
+  providerModel,
+  resolveProvider,
+  validateAnswers,
+} from "../src/provider.js";
 
 const questions = { q: { type: "noul", instructions: "x" } };
+const yes = { type: "noul", noul: 0.9 };
 
 function jsonResponse(body: unknown, status = 200): Response {
   return new Response(JSON.stringify(body), { status, headers: { "content-type": "application/json" } });
@@ -27,6 +34,35 @@ describe("resolveProvider", () => {
     expect(() => resolveProvider({ CLOUDFLARE_API_TOKEN: "t" }, "cloudflare")).toThrow(
       /CLOUDFLARE_ACCOUNT_ID/,
     );
+  });
+});
+
+describe("validateAnswers", () => {
+  const qs = { a: { type: "noul" }, b: { type: "choice", criteria: { x: null } } };
+  const good = { a: yes, b: { type: "choice", choice: "x", probabilities: { x: 1 }, confidence: 0.9 } };
+
+  test("passes a complete, well-typed answer set through unchanged", () => {
+    expect(validateAnswers(qs, good, "m")).toBe(good);
+  });
+
+  test("rejects a body with no answers object (non-JSON or empty proxy response)", () => {
+    expect(() => validateAnswers(qs, undefined, "m")).toThrow(/Malformed response from m: no answers object/);
+    expect(() => validateAnswers(qs, [], "m")).toThrow(/no answers object/);
+  });
+
+  test("rejects missing answers instead of letting them read as probability 0", () => {
+    expect(() => validateAnswers(qs, {}, "m")).toThrow(/no answer for a, b/);
+    expect(() => validateAnswers(qs, { a: yes }, "m")).toThrow(/no answer for b\./);
+  });
+
+  test("rejects an answer whose type or payload does not match the question", () => {
+    expect(() => validateAnswers(qs, { ...good, b: yes }, "m")).toThrow(
+      /"b" has type noul but the question was choice/,
+    );
+    expect(() => validateAnswers(qs, { ...good, a: { type: "noul", noul: "0.9" } }, "m")).toThrow(
+      /non-numeric noul/,
+    );
+    expect(() => validateAnswers(qs, { ...good, b: { type: "choice" } }, "m")).toThrow(/has no choice/);
   });
 });
 
@@ -73,7 +109,7 @@ describe("createAsk", () => {
   test("typesafe: honors TYPESAFE_BASE_URL", async () => {
     const fetchMock = vi.fn(async (url: string) => {
       expect(url).toBe("http://127.0.0.1:9/v1/systemone");
-      return jsonResponse({ model: "m", answers: {}, usage: { input_tokens: 0, output_tokens: 0 } });
+      return jsonResponse({ model: "m", answers: { q: yes }, usage: { input_tokens: 0, output_tokens: 0 } });
     });
     const ask = createAsk({
       provider: "typesafe",

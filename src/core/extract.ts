@@ -69,7 +69,8 @@ export const BUILTIN_FIELDS: Record<string, Omit<FieldSpec, "name">> = {
   },
   number: {
     description: "the number",
-    pattern: /-?\d[\d,]*(?:\.\d+)?/g,
+    // A leading minus only counts when it is not glued to a word (INV-20931 is not negative).
+    pattern: /(?<!\w)-?\d(?:[\d,]*\d)?(?:\.\d+)?/g,
     normalize: (s) => Number(s.replace(/,/g, "")),
   },
 };
@@ -188,6 +189,7 @@ export function buildExtractRequest(input: Pick<ExtractInput, "text" | "fields" 
 
 export async function runExtract(ask: AskFn, input: ExtractInput): Promise<ExtractOutput> {
   const { state, questions, candidates } = buildExtractRequest(input);
+  // biome-ignore lint/suspicious/noExplicitAny: answer payloads are the SDK's loosely typed union
   let answers: Record<string, any> = {};
   let usage: Usage = { input_tokens: 0, output_tokens: 0 };
   let model = "";

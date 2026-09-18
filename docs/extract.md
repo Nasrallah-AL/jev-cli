@@ -17,7 +17,7 @@ Invoices, emails, forms, logs: anything where you need specific values and canno
 | builtin | `--want email,phone,date` | `email`, `phone`, `url`, `amount`, `date`, `percent`, `number` |
 | custom regex | `--want invoice=/INV-\d+/` | Your pattern, named |
 | custom regex with meaning | `--want po=/PO\s?\d{6}/:the purchase order number` | The description drives the question |
-| aliased builtin | `--want sender=email:the sender's address` | Same pattern, different meaning, so two emails can be told apart |
+| aliased builtin | `--want "sender=email:the sender's address"` (quote descriptions with spaces) | Same pattern, different meaning, so two emails can be told apart |
 
 ## Options
 

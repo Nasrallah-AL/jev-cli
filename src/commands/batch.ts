@@ -19,6 +19,7 @@ type Register = (
   program: Command,
   run: (fn: (ctx: CommandContext) => Promise<number>, cmd: Command) => Promise<void>,
 ) => void;
+// biome-ignore lint/suspicious/noExplicitAny: each command has its own flag type; the registry erases it
 type Prepare = (flags: any, ctx: CommandContext) => BatchItemRunner;
 
 /** Commands that accept one text input per row. */
@@ -183,6 +184,7 @@ export async function batchAction(
 
 /** One-cell summary of a sub-command result, for csv/tsv/md batch tables. */
 export function summarizeResult(result: unknown): string {
+  // biome-ignore lint/suspicious/noExplicitAny: answer payloads are the SDK's loosely typed union
   const r = (result ?? {}) as Record<string, any>;
   if (typeof r.label === "string") return r.label;
   if (Array.isArray(r.applied)) return r.applied.join("; ");
@@ -200,7 +202,10 @@ export function summarizeResult(result: unknown): string {
       .join("; ");
   if (r.answers)
     return Object.entries(r.answers)
-      .map(([k, v]) => `${k}=${(v as any).choice ?? (v as any).noul ?? (v as any).score ?? ""}`)
+      .map(([k, v]) => {
+        const a = v as { choice?: unknown; noul?: unknown; score?: unknown };
+        return `${k}=${a.choice ?? a.noul ?? a.score ?? ""}`;
+      })
       .join("; ");
   return "";
 }

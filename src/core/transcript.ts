@@ -87,8 +87,8 @@ function isMessageArray(v: unknown): v is Message[] {
         m &&
         typeof m === "object" &&
         ((m as Message).role === "user" || (m as Message).role === "assistant") &&
-        typeof (m as Message).text === "string" &&
-        Array.isArray((m as Message).toolUses),
+        ((m as Message).text === undefined || typeof (m as Message).text === "string") &&
+        ((m as Message).toolUses === undefined || Array.isArray((m as Message).toolUses)),
     )
   );
 }
@@ -109,10 +109,12 @@ export function parseTranscript(raw: string): ParsedTranscript {
     }
     if (!isMessageArray(parsed)) {
       throw new Error(
-        "A JSON transcript must be an array of {role, text, toolUses[], toolResults?[]} messages.",
+        "A JSON transcript must be an array of {role, text?, toolUses?[], toolResults?[]} messages.",
       );
     }
-    return { format: "messages-json", messages: parsed, skipped: 0 };
+    // `text` and `toolUses` may be omitted (a tool-result-only message has neither).
+    const messages = parsed.map((m) => ({ ...m, text: m.text ?? "", toolUses: m.toolUses ?? [] }));
+    return { format: "messages-json", messages, skipped: 0 };
   }
   const messages: Message[] = [];
   let skipped = 0;

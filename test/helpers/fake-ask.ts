@@ -12,6 +12,7 @@ export interface FakeAsk {
 }
 
 export function fakeAsk(
+  // biome-ignore lint/suspicious/noExplicitAny: tests poke at question shapes freely
   answers: Record<string, unknown> | ((questions: Record<string, any>) => Record<string, unknown>),
 ): FakeAsk {
   const calls: FakeAsk["calls"] = [];

@@ -69,6 +69,7 @@ export function renderAsk(out: AskOutput, ctx: CommandContext): View {
   const head: string[] = [];
   const kv: Array<[string, string]> = [];
   for (const [id, answer] of Object.entries(out.answers)) {
+    // biome-ignore lint/suspicious/noExplicitAny: answer payloads are the SDK's loosely typed union
     const a = answer as Record<string, any>;
     if (a?.type === "noul") {
       head.push(`${paint(c, "bold", id)}: ${formatProbability(a.noul)}`);

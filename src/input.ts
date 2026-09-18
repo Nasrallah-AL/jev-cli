@@ -77,7 +77,7 @@ export function nonEmptyLines(text: string): string[] {
  */
 export function parseList(text: string, label = "list"): string[] {
   const trimmed = text.trim();
-  if (trimmed.startsWith("[")) {
+  if (trimmed.startsWith("[") || trimmed.startsWith("{")) {
     const parsed = parseJson<unknown>(trimmed, label);
     if (!Array.isArray(parsed) || !parsed.every((x) => typeof x === "string")) {
       throw new CliError(`${label} must be a JSON array of strings.`);

@@ -143,11 +143,11 @@ Fields:
   Builtins: ${Object.keys(BUILTIN_FIELDS).join(", ")}
   Custom:   name=/regex/            e.g. invoice=/INV-\\d+/
             name=/regex/:description e.g. po=/PO\\s?\\d{6}/:the purchase order number
-            name=builtin:description e.g. sender=email:the sender's address
+            name=builtin:description e.g. "sender=email:the sender's address" (quote descriptions with spaces)
 
 Examples:
   jev extract @invoice.txt --want amount,date --want invoice=/INV-\\d+/ --context "supplier invoice"
-  cat email.eml | jev extract --want sender=email:the sender --want reply_by=date:the reply deadline --json`,
+  cat email.eml | jev extract --want "sender=email:the sender" --want "reply_by=date:the reply deadline" --json`,
     )
     .action(async (text: string | undefined, flags: ExtractFlags, cmd: Command) => {
       await run((ctx) => extractAction(text, flags, ctx), cmd);

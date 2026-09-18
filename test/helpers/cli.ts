@@ -32,6 +32,7 @@ export interface Harness {
   /** Fresh temp directory per test. */
   dir(): string;
   /** Parse JSONL stdout. */
+  // biome-ignore lint/suspicious/noExplicitAny: tests index into JSONL rows freely
   lines(stdout: string): any[];
 }
 

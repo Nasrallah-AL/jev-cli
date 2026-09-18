@@ -68,6 +68,9 @@ export function buildFindRequest(input: Pick<FindInput, "query" | "candidates">)
 }
 
 export async function runFind(ask: AskFn, input: FindInput): Promise<FindOutput> {
+  if (input.absent > input.found) {
+    throw new Error(`--absent (${input.absent}) must not exceed --found (${input.found}).`);
+  }
   const { state, questions, candidates } = buildFindRequest(input);
   const { answers, usage, provider, model } = await ask(state, questions);
 

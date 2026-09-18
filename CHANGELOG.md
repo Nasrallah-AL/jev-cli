@@ -7,6 +7,25 @@ breaking changes to flags or JSON output; they are called out below.
 
 ## [Unreleased]
 
+### Fixed
+
+- A response with missing, mistyped, or absent answers is now an error (exit 1, `Malformed response from <model>`). Previously `screen` printed `PASS`, `find` reported all candidates at 0.00, and `verify` marked claims `unknown` with exit 0.
+- `find --lines` / `rerank --lines`: ids are now the real 1-based source line numbers (`L7` is line 7 of the file), not the index among non-empty lines.
+- `find`: `--absent` above `--found` is rejected instead of silently producing inconsistent verdicts.
+- `compact`: messages JSON may omit `text` and `toolUses` (a tool-result-only message needs neither).
+- Text and Markdown footers print `no API call made` instead of an empty model and provider when no request was sent.
+- `extract --help` quotes the descriptions-with-spaces examples so they paste into a shell.
+- `extract`: the `number` builtin no longer reads a hyphen glued to a word as a minus sign (`INV-20931` → `20931`) and no longer captures a trailing comma.
+- `config set` rejects keys the schema does not know instead of writing them silently.
+- `--claims @file` containing a JSON object (not an array) is an error rather than one literal claim; a blank claim is rejected before any request.
+- `--pluck` with a path that matches nothing exits 1 instead of printing an empty line (`batch` rows stay lenient).
+- `ask`: a shorthand question id used twice is an error instead of silently overwriting the first question.
+- Keys are masked the same way from every source (`…` plus the last four characters, or `********` for short keys); previously file-stored keys showed their first four characters.
+
+### Changed
+
+- `match` results carry `left_text` and `right_text` alongside the ids, and the text table shows `id: text` so string pairs are identifiable.
+
 ### Added
 
 - `jev classify`: single-label (Choice), multi-label (`--multi`, one Noul per label), and hierarchical (`--taxonomy`, greedy level-by-level) classification with `--other` escape, `--min-confidence`, and `--fail-on review,other,unlabeled`.

@@ -15,6 +15,8 @@ export interface Usage {
 }
 
 export interface AskResult {
+  /** One answer per question id, validated by `validateAnswers`; commands narrow by question type. */
+  // biome-ignore lint/suspicious/noExplicitAny: answers are a discriminated union the SDK types loosely
   answers: Record<string, any>;
   usage: Usage;
   provider: ResolvedProvider;
@@ -34,6 +36,17 @@ export interface ProviderOptions {
 }
 
 const USER_AGENT = "jevctl";
+
+interface ProxyBody {
+  answers?: unknown;
+  usage?: { input_tokens?: number; output_tokens?: number };
+  model?: string;
+}
+interface CloudflareBody extends ProxyBody {
+  success?: boolean;
+  errors?: unknown;
+  result?: ProxyBody & { state?: string; result?: ProxyBody };
+}
 const REFERER = "https://github.com/Nasrallah-AL/jev-cli";
 
 /** OpenRouter has no `latest` alias; map it to the current pinned release. */
@@ -92,6 +105,49 @@ export function providerModel(provider: ResolvedProvider, model: string): string
   return model;
 }
 
+/**
+ * Reject a response that is not the answers the request asked for. Jev either
+ * answers every question or the request fails; a missing or mistyped answer
+ * means a proxy or transport problem, and treating it as "probability 0" would
+ * let a screen pass or a claim verify by accident.
+ */
+export function validateAnswers(
+  questions: Record<string, unknown>,
+  answers: unknown,
+  model: string,
+  // biome-ignore lint/suspicious/noExplicitAny: see AskResult.answers
+): Record<string, any> {
+  if (!answers || typeof answers !== "object" || Array.isArray(answers)) {
+    throw new CliError(
+      `Malformed response from ${model}: no answers object. Retry, or check TYPESAFE_BASE_URL.`,
+    );
+  }
+  const got = answers as Record<string, Record<string, unknown>>;
+  const missing = Object.keys(questions).filter((id) => !(id in got));
+  if (missing.length > 0) {
+    const shown = missing.slice(0, 5).join(", ") + (missing.length > 5 ? `, … (${missing.length})` : "");
+    throw new CliError(`Malformed response from ${model}: no answer for ${shown}.`);
+  }
+  for (const [id, q] of Object.entries(questions)) {
+    const asked = (q as { type?: string })?.type;
+    const a = got[id];
+    const problem =
+      !a || typeof a !== "object"
+        ? "is not an object"
+        : asked && a.type !== asked
+          ? `has type ${String(a.type)} but the question was ${asked}`
+          : a.type === "noul" && typeof a.noul !== "number"
+            ? "has a non-numeric noul probability"
+            : a.type === "choice" && typeof a.choice !== "string"
+              ? "has no choice"
+              : a.type === "score" && typeof a.score !== "number"
+                ? "has a non-numeric score"
+                : null;
+    if (problem) throw new CliError(`Malformed response from ${model}: answer "${id}" ${problem}.`);
+  }
+  return got;
+}
+
 /** Build an `AskFn` bound to the resolved provider. */
 export function createAsk(opts: ProviderOptions): AskFn {
   const env = opts.env ?? process.env;
@@ -105,16 +161,21 @@ export function createAsk(opts: ProviderOptions): AskFn {
       baseURL: env.TYPESAFE_BASE_URL || undefined,
       defaultModel: model,
       timeout: opts.timeoutMs,
+      // biome-ignore lint/suspicious/noExplicitAny: the SDK declares its own fetch type
       fetch: fetchImpl as any,
       defaultHeaders: { "User-Agent": USER_AGENT },
     });
     return async (state, questions) => {
       const response = await client.systemOne(
-        { state: state as any, questions: questions as Questions, model },
+        {
+          state: state as Parameters<typeof client.systemOne>[0]["state"],
+          questions: questions as Questions,
+          model,
+        },
         { signal: opts.signal },
       );
       return {
-        answers: response.answers as Record<string, any>,
+        answers: validateAnswers(questions, response.answers, response.model ?? model),
         usage: {
           input_tokens: response.usage?.input_tokens ?? 0,
           output_tokens: response.usage?.output_tokens ?? 0,
@@ -147,9 +208,9 @@ export function createAsk(opts: ProviderOptions): AskFn {
         const body = await response.text().catch(() => "");
         throw new CliError(`OpenRouter decisions API ${response.status}: ${body.slice(0, 300)}`);
       }
-      const body = (await response.json()) as any;
+      const body = (await response.json()) as ProxyBody;
       return {
-        answers: body.answers ?? {},
+        answers: validateAnswers(questions, body.answers, body.model ?? model),
         usage: { input_tokens: body.usage?.input_tokens ?? 0, output_tokens: body.usage?.output_tokens ?? 0 },
         provider,
         model: body.model ?? model,
@@ -174,7 +235,7 @@ export function createAsk(opts: ProviderOptions): AskFn {
       opts.timeoutMs,
       opts.signal,
     );
-    const body = (await response.json().catch(() => ({}))) as any;
+    const body = (await response.json().catch(() => ({}))) as CloudflareBody;
     if (!response.ok || body.success === false) {
       throw new CliError(
         `Cloudflare AI run ${response.status}: ${JSON.stringify(body.errors ?? body).slice(0, 300)}`,
@@ -188,7 +249,7 @@ export function createAsk(opts: ProviderOptions): AskFn {
     }
     const payload = outer?.result ?? outer ?? body;
     return {
-      answers: payload.answers ?? {},
+      answers: validateAnswers(questions, payload.answers, payload.model ?? model),
       usage: {
         input_tokens: payload.usage?.input_tokens ?? 0,
         output_tokens: payload.usage?.output_tokens ?? 0,

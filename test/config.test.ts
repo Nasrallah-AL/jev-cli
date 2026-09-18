@@ -6,6 +6,7 @@ import {
   configFromEnv,
   configPath,
   DEFAULT_CONFIG,
+  knownConfigKeys,
   mergeConfig,
   readConfigFile,
   resolveConfig,
@@ -94,6 +95,12 @@ describe("setConfigValue", () => {
     });
     expect(() => setConfigValue({}, "screen.blockAt", "2")).toThrow(/Cannot set/);
     expect(() => setConfigValue({}, "provider", "nope")).toThrow(/Cannot set/);
+  });
+
+  test("rejects keys the schema does not know", () => {
+    expect(() => setConfigValue({}, "bogus.key", "1")).toThrow(/Unknown config key "bogus.key"/);
+    expect(() => setConfigValue({}, "screen.typo", "1")).toThrow(/Unknown config key/);
+    expect(knownConfigKeys().has("compact.keepThreshold")).toBe(true);
   });
 });
 

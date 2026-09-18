@@ -39,6 +39,7 @@ export function collectClaims(positional: string[], flags: VerifyFlags): string[
   if (flags.claims) claims.push(...parseList(readInput(flags.claims, "claims"), "claims"));
   if (claims.length === 0)
     throw new CliError("Provide at least one claim as an argument or with --claims <@file|->.");
+  if (claims.some((c) => c.trim().length === 0)) throw new CliError("A claim must not be empty.");
   return claims;
 }
 

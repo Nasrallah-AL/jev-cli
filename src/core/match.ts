@@ -43,6 +43,8 @@ export interface MatchInput {
 export interface MatchResult {
   left: string;
   right: string;
+  left_text: string;
+  right_text: string;
   decision: MatchDecision;
   score: number | null;
   confidence: number | null;
@@ -131,6 +133,8 @@ export async function runMatch(ask: AskFn, input: MatchInput): Promise<MatchOutp
       results.push({
         left: labelOf(pair.left, `left${offset + i}`),
         right: labelOf(pair.right, `right${offset + i}`),
+        left_text: pair.left.text,
+        right_text: pair.right.text,
         decision,
         score: typeof a?.score === "number" ? Number(a.score.toFixed(4)) : null,
         confidence: typeof a?.confidence === "number" ? a.confidence : null,

@@ -7,6 +7,7 @@ import type { AddressInfo } from "node:net";
 
 export type Handler = (body: {
   state: unknown;
+  // biome-ignore lint/suspicious/noExplicitAny: tests poke at question shapes freely
   questions: Record<string, any>;
   model: string;
 }) => Record<string, unknown>;

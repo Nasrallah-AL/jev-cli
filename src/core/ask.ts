@@ -91,23 +91,27 @@ export function questionsFromFlags(flags: ShorthandFlags): RawQuestions {
   const questions: Record<string, unknown> = {};
   let n = 0;
   const nextId = (prefix: string) => `${prefix}${++n}`;
+  const add = (id: string, q: unknown) => {
+    if (id in questions) throw new Error(`Question id "${id}" is used twice.`);
+    questions[id] = q;
+  };
 
   for (const raw of flags.noul ?? []) {
     const { id, instructions } = splitShorthand(raw, nextId("q"));
-    questions[id] = noul(instructions);
+    add(id, noul(instructions));
   }
   for (const raw of flags.choice ?? []) {
     const { id, instructions: rest } = splitShorthand(raw, nextId("q"));
     const { instructions, options } = splitOptions(rest);
     if (options.length < 2) throw new Error(`Choice "${id}" needs at least two options.`);
-    questions[id] = choice(instructions, Object.fromEntries(options.map((o) => [o.label, o.description])));
+    add(id, choice(instructions, Object.fromEntries(options.map((o) => [o.label, o.description]))));
   }
   for (const raw of flags.score ?? []) {
     const { id, instructions: rest } = splitShorthand(raw, nextId("q"));
     const { instructions, options } = splitOptions(rest);
     if (options.length < 2) throw new Error(`Score "${id}" needs at least two levels.`);
     const levels = options.map((o) => (o.description ? `${o.label}: ${o.description}` : o.label));
-    questions[id] = score(instructions, levels as [string, string, ...string[]]);
+    add(id, score(instructions, levels as [string, string, ...string[]]));
   }
   return parseQuestions(questions);
 }

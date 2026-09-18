@@ -15,7 +15,7 @@ Before handing a long session to another agent, to audit what a compaction would
 | Form | Example |
 | --- | --- |
 | Claude Code session log | `@~/.claude/projects/<project>/<session>.jsonl` |
-| Messages JSON | `[{"role","text","toolUses":[{"tool_use_id","tool","input"}],"toolResults":[{"tool_use_id","text"}]}]` |
+| Messages JSON | `[{"role","text","toolUses":[{"tool_use_id","tool","input"}],"toolResults":[{"tool_use_id","text"}]}]`; `text` and `toolUses` may be omitted |
 
 ## Options
 

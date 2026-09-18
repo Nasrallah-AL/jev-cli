@@ -58,6 +58,7 @@ describe("parsers", () => {
 
   test("parseList handles JSON arrays and line lists", () => {
     expect(parseList('["x","y"]')).toEqual(["x", "y"]);
+    expect(() => parseList('{"not":"a list"}', "claims")).toThrow(/claims must be a JSON array of strings/);
     expect(parseList("x\ny\n")).toEqual(["x", "y"]);
     expect(() => parseList("[1,2]", "claims")).toThrow(/array of strings/);
   });

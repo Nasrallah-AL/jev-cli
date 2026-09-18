@@ -181,7 +181,7 @@ guaranteed to fit. Put domain rules in label descriptions.
 
 ```bash
 jev extract @invoice.txt --want amount,date --want invoice=/INV-\d+/:the invoice number --context "supplier invoice" --json
-jev extract @email.txt --want sender=email:the sender --want reply_by=date:the reply deadline --json
+jev extract @email.txt --want "sender=email:the sender" --want "reply_by=date:the reply deadline" --json
 ```
 
 Builtins: `email`, `phone`, `url`, `amount`, `date`, `percent`, `number`. Custom:

@@ -112,8 +112,8 @@ export function renderMatch(out: MatchOutput, ctx: CommandContext): View {
   const rows = out.results.map((r) => [
     style(r.decision),
     formatProbability(r.confidence),
-    clip(r.left, 28),
-    clip(r.right, 28),
+    clip(r.left === r.left_text ? r.left : `${r.left}: ${r.left_text}`, 40),
+    clip(r.right === r.right_text ? r.right : `${r.right}: ${r.right_text}`, 40),
   ]);
   const s = out.summary;
   return {

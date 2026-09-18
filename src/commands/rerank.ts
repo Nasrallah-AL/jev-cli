@@ -90,7 +90,10 @@ export function registerRerank(
       "JSON candidates (@file or -): array of strings, array of {id,text}, or {id: text}",
     )
     .option("-f, --files <paths...>", "treat each file as a candidate (id = path)")
-    .option("-l, --lines <ref>", "treat each non-empty line of @file or - as a candidate (id = L<n>)")
+    .option(
+      "-l, --lines <ref>",
+      "treat each non-empty line of @file or - as a candidate (id = L<line number>)",
+    )
     .option("-k, --top-k <n>", "how many ranked results to return (default 10)")
     .option("--min <p>", "relevance at or above which a candidate is kept (default 0.5)")
     .option(

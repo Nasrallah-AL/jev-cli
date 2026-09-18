@@ -85,6 +85,7 @@ export function usageLine(
   model: string,
   provider: string,
 ) {
+  if (!model && !provider) return "no API call made";
   return `${usage.input_tokens} in / ${usage.output_tokens} out tokens · ${model} via ${provider}`;
 }
 
@@ -191,7 +192,12 @@ export function renderPluck(value: unknown, format: Format): string {
 export function emit(opts: OutputOptions, payload: unknown, view: () => View): void {
   const stream = opts.stream ?? process.stdout;
   const write = (s: string) => stream.write(`${s}\n`);
-  if (opts.pluck) return void write(renderPluck(pluck(payload, opts.pluck), opts.format));
+  if (opts.pluck) {
+    const value = pluck(payload, opts.pluck);
+    const empty = value === undefined || (Array.isArray(value) && value.every((v) => v === undefined));
+    if (empty) throw new CliError(`--pluck path "${opts.pluck}" matched nothing in this result.`);
+    return void write(renderPluck(value, opts.format));
+  }
   switch (opts.format) {
     case "json":
       return void write(JSON.stringify(payload, null, 2));

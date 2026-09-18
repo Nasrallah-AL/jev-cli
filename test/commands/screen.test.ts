@@ -1,6 +1,7 @@
 import { describe, expect, test } from "vitest";
 import { buildScreenRequest, runScreen, screenFailed } from "../../src/core/screen.js";
 import { cliHarness } from "../helpers/cli.js";
+import { startFakeApi } from "../helpers/fake-api.js";
 import { fakeAsk, yes } from "../helpers/fake-ask.js";
 
 describe("screen: core", () => {
@@ -36,6 +37,18 @@ describe("screen: core", () => {
 
 describe("screen: cli", () => {
   const h = cliHarness({ injection: yes(0.98), substance: yes(0.9), relevance: yes(0.8) });
+
+  test("a response with no answers is an error, never a PASS", async () => {
+    const emptyApi = await startFakeApi(() => ({}));
+    try {
+      const r = await h.run(["screen", "hello"], { env: { TYPESAFE_BASE_URL: emptyApi.url } });
+      expect(r.code).toBe(1);
+      expect(r.stdout).toBe("");
+      expect(r.stderr).toMatch(/Malformed response .* no answer for injection, substance/);
+    } finally {
+      await emptyApi.close();
+    }
+  });
 
   test("blocks injected text from stdin with exit 2", async () => {
     const r = await h.run(["screen", "--purpose", "summarize"], {

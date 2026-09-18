@@ -1,5 +1,13 @@
 import { describe, expect, test } from "vitest";
-import { pluck, renderDelimited, renderMarkdown, renderPluck, renderText, type View } from "../src/output.js";
+import {
+  emit,
+  pluck,
+  renderDelimited,
+  renderMarkdown,
+  renderPluck,
+  renderText,
+  type View,
+} from "../src/output.js";
 import { cliHarness } from "./helpers/cli.js";
 
 const ESC = String.fromCharCode(27);
@@ -29,6 +37,12 @@ describe("output: renderers", () => {
     expect(renderText({ usage: view.usage }, { color: false, quiet: false })).toBe(
       "7 in / 1 out tokens · jev-1.13.0 via typesafe",
     );
+  });
+
+  test("text footer says so when no request was made instead of printing an empty model", () => {
+    const noCall = { usage: { input_tokens: 0, output_tokens: 0 }, model: "", provider: "" };
+    expect(renderText({ usage: noCall }, { color: false, quiet: false })).toBe("no API call made");
+    expect(renderMarkdown({ usage: noCall }, { quiet: false })).toContain("_no API call made_");
   });
 
   test("markdown: strips ANSI, escapes pipes, italic usage; kv becomes a table when there is no table", () => {
@@ -64,6 +78,9 @@ describe("output: pluck", () => {
     expect(pluck(payload, "fields.email.value")).toBe("a@b.co");
     expect(pluck(payload, "fields[].value")).toEqual(["a@b.co"]);
     expect(pluck(payload, "nope.deeper")).toBeUndefined();
+    expect(() =>
+      emit({ format: "text", color: false, quiet: true, pluck: "nope.deeper" }, payload, () => ({})),
+    ).toThrow(/--pluck path "nope.deeper" matched nothing/);
     expect(() => pluck(payload, "")).toThrow(/Invalid --pluck/);
   });
   test("rendering: scalars raw, arrays one per line, objects as JSON, json formats as JSON", () => {
