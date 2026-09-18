@@ -9,7 +9,7 @@ an acknowledgement within a few days.
 
 ## Scope and notes
 
-- jev-cli sends the text you pass it (claims, evidence, screened content,
+- jevx sends the text you pass it (claims, evidence, screened content,
   candidates, state) to the configured provider: TypeSafe, OpenRouter, or
   Cloudflare. Do not pass secrets or data you are not allowed to send to those
   services. `--dry-run` shows exactly what would be sent.

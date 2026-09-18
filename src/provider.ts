@@ -33,8 +33,8 @@ export interface ProviderOptions {
   signal?: AbortSignal;
 }
 
-const USER_AGENT = "jev-cli";
-const REFERER = "https://github.com/Nasrallah-AL/jev-cli";
+const USER_AGENT = "jevx";
+const REFERER = "https://github.com/Nasrallah-AL/jevx";
 
 /** OpenRouter has no `latest` alias; map it to the current pinned release. */
 export const OPENROUTER_LATEST = "jev-1.13";

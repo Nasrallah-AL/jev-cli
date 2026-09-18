@@ -14,7 +14,7 @@ jev ...
 **Actual** (include stderr; run with `JEV_DEBUG=1` for a stack trace)
 
 **Environment**
-- jev-cli version (`jev --version`):
+- jevx version (`jev --version`):
 - Node version (`node --version`):
 - Provider (`jev config` shows the resolved provider):
 - OS:

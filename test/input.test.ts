@@ -14,7 +14,7 @@ import {
 
 let dir: string;
 beforeEach(() => {
-  dir = mkdtempSync(join(tmpdir(), "jev-cli-input-"));
+  dir = mkdtempSync(join(tmpdir(), "jevx-input-"));
 });
 afterEach(() => {
   rmSync(dir, { recursive: true, force: true });
