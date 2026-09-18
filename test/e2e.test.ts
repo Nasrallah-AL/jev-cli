@@ -1,19 +1,19 @@
 // Live end-to-end tests against the real TypeSafe API. Run with
 // `npm run test:e2e`; skipped unless TYPESAFE_API_KEY is set.
 
-import { describe, expect, test } from "vitest";
+import { beforeAll, describe, expect, test } from "vitest";
 import { runFind } from "../src/core/find.js";
 import { runScreen } from "../src/core/screen.js";
 import { runVerify } from "../src/core/verify.js";
-import { createAsk } from "../src/provider.js";
+import { type AskFn, createAsk } from "../src/provider.js";
 
 const hasKey = Boolean(process.env.TYPESAFE_API_KEY);
 
 describe.skipIf(!hasKey)("live API", () => {
-  const ask = createAsk({
-    provider: "auto",
-    model: process.env.JEV_MODEL ?? "jev-latest",
-    timeoutMs: 30_000,
+  // Built lazily so a missing key skips the suite instead of failing collection.
+  let ask: AskFn;
+  beforeAll(() => {
+    ask = createAsk({ provider: "auto", model: process.env.JEV_MODEL ?? "jev-latest", timeoutMs: 30_000 });
   });
 
   test("verify catches a contradicted claim", async () => {
