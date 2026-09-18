@@ -415,7 +415,7 @@ if (screened.recommendation.action === "block") throw new Error(screened.recomme
 
 ```bash
 git clone https://github.com/Nasrallah-AL/jev-cli
-cd jevctl
+cd jev-cli
 npm install
 npm run check        # typecheck, lint, and tests. No API key needed.
 npm run build        # compiles to dist/
