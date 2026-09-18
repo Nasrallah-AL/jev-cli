@@ -8,3 +8,5 @@ tsconfig*.json
 .env.example
 .nvmrc
 .editorconfig
+plugin/
+.claude-plugin/

@@ -1,0 +1,13 @@
+{
+  "name": "jev",
+  "version": "0.1.0",
+  "description": "Cheap, fast, typed AI judgments inside Claude Code via the jevctl CLI: verify claims against evidence, screen fetched text for prompt injection, rank candidates by meaning, and ask yes/no, multiple-choice, or rating questions.",
+  "author": {
+    "name": "Nasr Shaer",
+    "email": "shaer.nasrallah@gmail.com"
+  },
+  "homepage": "https://github.com/Nasrallah-AL/jev-cli",
+  "repository": "https://github.com/Nasrallah-AL/jev-cli",
+  "license": "MIT",
+  "keywords": ["jev", "typesafe", "verification", "fact-check", "prompt-injection", "guardrails", "semantic-search"]
+}

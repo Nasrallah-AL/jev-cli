@@ -7,6 +7,10 @@ breaking changes to flags or JSON output; they are called out below.
 
 ## [Unreleased]
 
+### Added
+
+- Claude Code plugin (`plugin/`) with the `jev` skill and `/jev:verify`, `/jev:screen`, `/jev:find`, `/jev:ask` commands; installable via `claude plugin marketplace add Nasrallah-AL/jev-cli`.
+
 ## [0.1.0] - 2026-09-18
 
 Initial release, published to npm as `jevctl`. The installed command is `jev`.

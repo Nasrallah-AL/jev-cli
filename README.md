@@ -31,6 +31,7 @@ Every command prints a readable table by default, full JSON with `--json`, and a
 - [Recipes](#recipes)
 - [Troubleshooting](#troubleshooting)
 - [Use from Node.js](#use-from-nodejs)
+- [Claude Code plugin](#claude-code-plugin)
 - [Development](#development)
 
 ## Install
@@ -410,6 +411,18 @@ console.log(verdicts.results[0].verdict, verdicts.results[0].confidence);
 const screened = await runScreen(ask, { text: pageHtml, purpose: "extract prices", blockAt: 0.75, reviewAt: 0.25 });
 if (screened.recommendation.action === "block") throw new Error(screened.recommendation.reason);
 ```
+
+## Claude Code plugin
+
+This repo ships a [Claude Code](https://claude.com/claude-code) plugin that teaches Claude when and how to use `jev`, plus four slash commands: `/jev:verify`, `/jev:screen`, `/jev:find`, `/jev:ask`.
+
+```bash
+npm install -g jevctl
+claude plugin marketplace add Nasrallah-AL/jev-cli
+claude plugin install jev@jev-cli
+```
+
+Once installed, Claude will screen fetched pages before reading them, fact-check its own summaries against sources, and use `jev find` instead of grepping when a query is about meaning. See [plugin/README.md](plugin/README.md).
 
 ## Development
 
