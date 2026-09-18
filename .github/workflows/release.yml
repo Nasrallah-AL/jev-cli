@@ -26,8 +26,8 @@ jobs:
           PKG="v$(node -p "require('./package.json').version")"
           test "$PKG" = "${GITHUB_REF_NAME}" || { echo "tag ${GITHUB_REF_NAME} != package ${PKG}"; exit 1; }
       # Trusted Publishing: npm authenticates this job via GitHub OIDC (id-token: write).
-      # No npm token is stored anywhere. Configure once on npmjs.com under jevx's
-      # Settings > Trusted Publisher: GitHub Actions, owner Nasrallah-AL, repo jevx,
+      # No npm token is stored anywhere. Configure once on npmjs.com under jevctl's
+      # Settings > Trusted Publisher: GitHub Actions, owner Nasrallah-AL, repo jevctl,
       # workflow release.yml. Requires npm 11.5.1 or newer, hence the upgrade step.
       - name: Upgrade npm for Trusted Publishing support
         run: npm install -g npm@latest && npm --version

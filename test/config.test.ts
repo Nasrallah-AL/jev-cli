@@ -16,7 +16,7 @@ import { flagsToConfig } from "../src/context.js";
 
 let dir: string;
 beforeEach(() => {
-  dir = mkdtempSync(join(tmpdir(), "jevx-"));
+  dir = mkdtempSync(join(tmpdir(), "jevctl-"));
 });
 afterEach(() => {
   rmSync(dir, { recursive: true, force: true });

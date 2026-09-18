@@ -1,5 +1,5 @@
 {
-  "name": "jevx",
+  "name": "jevctl",
   "version": "0.1.0",
   "description": "Command-line tool for TypeSafe's Jev AI model. Check claims against evidence, detect prompt injection, find the best match in a list, or ask your own yes/no, multiple-choice, and rating questions. Returns probabilities, not text.",
   "type": "module",
@@ -7,10 +7,10 @@
   "author": "Nasr Shaer",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/Nasrallah-AL/jevx.git"
+    "url": "git+https://github.com/Nasrallah-AL/jevctl.git"
   },
-  "homepage": "https://github.com/Nasrallah-AL/jevx#readme",
-  "bugs": "https://github.com/Nasrallah-AL/jevx/issues",
+  "homepage": "https://github.com/Nasrallah-AL/jevctl#readme",
+  "bugs": "https://github.com/Nasrallah-AL/jevctl/issues",
   "bin": {
     "jev": "dist/cli.js"
   },

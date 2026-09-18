@@ -1,12 +1,12 @@
 # Contributing
 
-Thanks for helping improve jevx. Issues and pull requests are welcome.
+Thanks for helping improve jevctl. Issues and pull requests are welcome.
 
 ## Setup
 
 ```bash
-git clone https://github.com/Nasrallah-AL/jevx
-cd jevx
+git clone https://github.com/Nasrallah-AL/jevctl
+cd jevctl
 npm install
 npm run check
 ```

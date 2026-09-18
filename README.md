@@ -1,12 +1,12 @@
-# jevx
+# jevctl
 
-[![CI](https://github.com/Nasrallah-AL/jevx/actions/workflows/ci.yml/badge.svg)](https://github.com/Nasrallah-AL/jevx/actions/workflows/ci.yml)
-[![npm](https://img.shields.io/npm/v/jevx.svg)](https://www.npmjs.com/package/jevx)
+[![CI](https://github.com/Nasrallah-AL/jevctl/actions/workflows/ci.yml/badge.svg)](https://github.com/Nasrallah-AL/jevctl/actions/workflows/ci.yml)
+[![npm](https://img.shields.io/npm/v/jevctl.svg)](https://www.npmjs.com/package/jevctl)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
 Fast, typed AI judgments from the command line, powered by TypeSafe's [Jev](https://docs.typesafe.ai) model.
 
-Jev does not generate text. You give it some content and a question with a fixed set of answers, and it returns a probability for each answer in a few hundred milliseconds for a fraction of a cent. `jevx` wraps that into four commands you can pipe into, script around, and gate CI on.
+Jev does not generate text. You give it some content and a question with a fixed set of answers, and it returns a probability for each answer in a few hundred milliseconds for a fraction of a cent. `jevctl` wraps that into four commands you can pipe into, script around, and gate CI on.
 
 | Command | Question it answers | Typical use |
 | --- | --- | --- |
@@ -39,7 +39,7 @@ You need Node.js 20.12 or newer and a TypeSafe API key.
 2. Install the CLI:
 
    ```bash
-   npm install -g jevx
+   npm install -g jevctl
    ```
 
 3. Export the key and confirm it is picked up:
@@ -51,7 +51,7 @@ You need Node.js 20.12 or newer and a TypeSafe API key.
 
    `jev config` prints the resolved settings and a masked view of the key. It exits 1 if no credentials are found.
 
-To try it without installing, prefix any command with `npx jevx` instead of `jev`. The installed command is always `jev`.
+To try it without installing, prefix any command with `npx jevctl` instead of `jev`. The installed command is always `jev`.
 
 ## Sixty-second start
 
@@ -394,7 +394,7 @@ jev find "$question" --lines @faq.txt --fail-on absent,partial --json
 The same functions the CLI uses are exported, so you can embed judgments in a script without shelling out.
 
 ```ts
-import { createAsk, runVerify, runScreen, runFind } from "jevx";
+import { createAsk, runVerify, runScreen, runFind } from "jevctl";
 
 const ask = createAsk({ provider: "auto", model: "jev-latest", timeoutMs: 30_000 });
 
@@ -412,8 +412,8 @@ if (screened.recommendation.action === "block") throw new Error(screened.recomme
 ## Development
 
 ```bash
-git clone https://github.com/Nasrallah-AL/jevx
-cd jevx
+git clone https://github.com/Nasrallah-AL/jevctl
+cd jevctl
 npm install
 npm run check        # typecheck, lint, and tests. No API key needed.
 npm run build        # compiles to dist/

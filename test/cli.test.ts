@@ -87,7 +87,7 @@ afterAll(async () => {
   await api.close();
 });
 beforeEach(() => {
-  dir = mkdtempSync(join(tmpdir(), "jevx-test-"));
+  dir = mkdtempSync(join(tmpdir(), "jevctl-test-"));
   api.requests.length = 0;
 });
 afterEach(() => {

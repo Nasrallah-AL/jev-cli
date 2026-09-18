@@ -9,7 +9,7 @@ breaking changes to flags or JSON output; they are called out below.
 
 ## [0.1.0] - 2026-09-18
 
-Initial release, published to npm as `jevx`. The installed command is `jev`.
+Initial release, published to npm as `jevctl`. The installed command is `jev`.
 
 ### Added
 
@@ -24,5 +24,5 @@ Initial release, published to npm as `jevx`. The installed command is `jev`.
 - Programmatic exports for embedding the same judgments in Node scripts.
 - Test suite: unit tests, provider transport tests with mocked fetch, CLI tests against a local fake TypeSafe API, and optional live e2e tests.
 
-[Unreleased]: https://github.com/Nasrallah-AL/jevx/compare/v0.1.0...HEAD
-[0.1.0]: https://github.com/Nasrallah-AL/jevx/releases/tag/v0.1.0
+[Unreleased]: https://github.com/Nasrallah-AL/jevctl/compare/v0.1.0...HEAD
+[0.1.0]: https://github.com/Nasrallah-AL/jevctl/releases/tag/v0.1.0
