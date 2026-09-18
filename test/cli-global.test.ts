@@ -28,6 +28,31 @@ describe("global behavior", () => {
     }
   });
 
+  test("--help groups commands and options under headings", async () => {
+    const help = (await h.run(["--help"])).stdout;
+    for (const heading of [
+      "Output:",
+      "Model and transport:",
+      "Judgments:",
+      "Ranking:",
+      "Pipelines:",
+      "Account:",
+      "Examples:",
+    ]) {
+      expect(help).toContain(`\n${heading}\n`);
+    }
+    expect(help.indexOf("Judgments:")).toBeLessThan(help.indexOf("Account:"));
+  });
+
+  test("help <command> prints that command's help; unknown command exits 1", async () => {
+    const r = await h.run(["help", "screen"]);
+    expect(r.code).toBe(0);
+    expect(r.stdout).toMatch(/^Usage: jev screen/);
+    const bad = await h.run(["help", "nope"]);
+    expect(bad.code).toBe(1);
+    expect(bad.stderr).toMatch(/unknown command 'nope'/);
+  });
+
   test("unknown command exits 1 with a hint", async () => {
     const r = await h.run(["bogus"]);
     expect(r.code).toBe(1);

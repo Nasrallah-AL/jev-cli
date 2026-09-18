@@ -9,6 +9,10 @@ breaking changes to flags or JSON output; they are called out below.
 
 ## [0.2.0] - 2026-09-18
 
+### Changed
+
+- `jev --help` is regrouped: options under `Output` and `Model and transport`, commands under `Judgments`, `Ranking`, `Pipelines`, and `Account`, each with a one-line summary; headings are bold and names colored on a TTY (`NO_COLOR` honored). Adds an `Examples` block. `jev help <command>` still works and exits 1 on an unknown name.
+
 ### Added
 
 - `jev classify`: single-label (Choice), multi-label (`--multi`, one Noul per label), and hierarchical (`--taxonomy`, greedy level-by-level) classification with `--other` escape, `--min-confidence`, and `--fail-on review,other,unlabeled`.
@@ -62,5 +66,6 @@ Initial release, published to npm as `jevctl`. The installed command is `jev`.
 - Programmatic exports for embedding the same judgments in Node scripts.
 - Test suite: unit tests, provider transport tests with mocked fetch, CLI tests against a local fake TypeSafe API, and optional live e2e tests.
 
-[Unreleased]: https://github.com/Nasrallah-AL/jev-cli/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/Nasrallah-AL/jev-cli/compare/v0.2.0...HEAD
+[0.2.0]: https://github.com/Nasrallah-AL/jev-cli/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/Nasrallah-AL/jev-cli/releases/tag/v0.1.0
