@@ -1,7 +1,7 @@
 {
   "name": "jevx",
   "version": "0.1.0",
-  "description": "Fast, typed judgments from TypeSafe's Jev model at the command line: verify claims against evidence, screen text for prompt injection, rank candidates by meaning, or ask raw System One questions.",
+  "description": "Command-line tool for TypeSafe's Jev AI model. Check claims against evidence, detect prompt injection, find the best match in a list, or ask your own yes/no, multiple-choice, and rating questions. Returns probabilities, not text.",
   "type": "module",
   "license": "MIT",
   "author": "Nasr Shaer",
