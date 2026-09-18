@@ -12,7 +12,11 @@ breaking changes to flags or JSON output; they are called out below.
 - `jev classify`: single-label (Choice), multi-label (`--multi`, one Noul per label), and hierarchical (`--taxonomy`, greedy level-by-level) classification with `--other` escape, `--min-confidence`, and `--fail-on review,other,unlabeled`.
 - `jev extract`: regex-candidate extraction with builtin fields (`email`, `phone`, `url`, `amount`, `date`, `percent`, `number`) and custom `name=/regex/:description` fields; Jev selects the span, code normalizes it. No API call when nothing matches.
 - `jev batch <command>`: run `classify`, `screen`, `extract`, `ask`, `verify`, or `find` over plain-line or JSONL input with a concurrency pool; JSONL records in input order, `--output`, `--fail-fast`, exit 1 on row errors and 2 on matched `--fail-on`.
-- Config sections `classify`, `extract`, `batch`.
+- `jev rerank`: independent relevance score (Noul) per candidate, sorted, with `--min` keep threshold, `--criteria`, and `--fail-on empty`.
+- `jev match`: same/unclear/different decision per pair from a three-level Score; `--pairs`, `--left/--right` cross product, `--dedupe`; chunked requests up to 200 pairs.
+- `jev route`: handler Choice with a built-in `none` plus speculative typed argument questions (choice/noul/score) per handler in one request; `-H` shorthand or `--handlers-json`; `--fail-on review,unrouted`.
+- `batch` also accepts `rerank` and `route`.
+- Config sections `classify`, `extract`, `batch`, `rerank`, `route`.
 
 - Claude Code plugin (`plugin/`) with the `jev` skill and `/jev:verify`, `/jev:screen`, `/jev:find`, `/jev:ask` commands; installable via `claude plugin marketplace add Nasrallah-AL/jev-cli`.
 

@@ -61,6 +61,8 @@ export async function configShow(ctx: CommandContext, env: NodeJS.ProcessEnv): P
       ],
       ["extract.minConfidence", String(ctx.config.extract.minConfidence)],
       ["batch.concurrency", String(ctx.config.batch.concurrency)],
+      ["rerank.topK / min", `${ctx.config.rerank.topK} / ${ctx.config.rerank.min}`],
+      ["route.minConfidence", String(ctx.config.route.minConfidence)],
     ];
     for (const [k, v] of Object.entries(payload.credentials)) rows.push([k, v ?? paint(c, "dim", "unset")]);
     const lines = [table(rows, { color: c })];

@@ -8,7 +8,9 @@ description: >
   (jev screen); pick which file, note, snippet, or line best answers a question without grepping
   everything (jev find); or classify, route, score, or triage text with a fixed set of answers
   (jev ask or jev classify); pull emails, amounts, dates, or ids out of a document without
-  hallucination (jev extract); or run any of these over many rows at once (jev batch). Each call
+  hallucination (jev extract); re-order search results by relevance (jev rerank); decide whether
+  two records are the same entity (jev match); turn a request into a handler plus typed arguments
+  (jev route); or run any of these over many rows at once (jev batch). Each call
   takes a few hundred milliseconds and a fraction of a cent, returns
   probabilities and a confidence, and sets an exit code. Prefer it over long chain-of-thought
   for these mechanical checks, and over embeddings or grep for meaning-based lookups.
@@ -186,12 +188,45 @@ The model can only choose among spans the regex found, so it cannot invent value
 comes back `none` with `candidates: 0`, the pattern did not match; widen the regex or check the
 text. Use `extract` instead of reading a document yourself when you need specific values.
 
+### rerank: filter and order results by relevance
+
+```bash
+jev rerank "$query" --candidates @results.json --min 0.6 --json
+```
+
+Independent relevance per candidate (unlike `find`, which picks one winner). Result: `ranked[]`
+with `id`, `relevance`, `kept`; `kept[]` ids. Use it on retrieved passages before answering from
+them, and drop anything not kept.
+
+### match: are these two records the same thing?
+
+```bash
+jev match --dedupe @items.json --kind "customer contacts" --json
+jev match --left @ours.json --right @theirs.json --kind "products" --json
+```
+
+Result per pair: `decision` (`same` | `unclear` | `different`), `confidence`, `probabilities`.
+Treat `unclear` as a real outcome that needs a person, not as a weak `same`. Limit 200 pairs;
+block large sets first.
+
+### route: request → handler + typed arguments
+
+```bash
+jev route @message.txt --handlers-json @handlers.json --json
+jev route "$text" -H "refund:money back,cancel:stop an order,support" --json
+```
+
+Result: `handler` (or `null` with `action: "none"`), `confidence`, `action`, `args.<name>.value`.
+Define handlers with `args` of type `choice` (options), `noul` (yes/no), or `score` (levels) and
+`route` fills them in the same call. Use it to turn free text into a call you can make in code.
+
 ### batch: many rows, one command
 
 ```bash
 jev batch classify -i @rows.jsonl -o out.jsonl -- -l a,b,c --other
 jev batch screen -i @pages.jsonl -- --purpose "extract pricing"
 jev batch verify -i @claims.txt -- --evidence @spec.md --fail-on none
+jev batch route -i @messages.jsonl -- --handlers-json @handlers.json
 ```
 
 Input: plain lines, or JSONL objects `{"id": "...", "text": "..."}` (extra fields pass through as

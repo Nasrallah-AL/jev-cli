@@ -18,6 +18,9 @@ Jev does not generate text. You give it some content and a question with a fixed
 | `jev ask` | Anything with a yes/no, pick-one, or rated answer | Route, score, or triage with your own questions |
 | `jev classify` | Which label fits? Which labels apply? Where in this hierarchy? | Label issues, route tickets, tag content |
 | `jev extract` | Which of these spans found in the text is the value I want? | Pull emails, amounts, dates, ids out of documents without hallucination |
+| `jev rerank` | How relevant is each result to the query, on its own? | Re-order and filter search results before using them |
+| `jev match` | Do these two records describe the same thing? | Dedupe contacts, align catalogs, merge duplicates |
+| `jev route` | Which handler should take this request, with which arguments? | Turn free text into a typed command for a script or bot |
 | `jev batch` | The same question over many rows | Run any of the above over a file at scale, with JSONL output |
 
 Every command prints a readable table by default, full JSON with `--json`, and an exit code you can branch on.
@@ -295,9 +298,92 @@ date     Sept 30, 2026  2026-09-30                        0.94  auto    2
 invoice  INV-2231                                         1.00  auto    1
 ```
 
+### `jev rerank`
+
+Scores every candidate's relevance to a query independently, then sorts. Where `find` asks "which one is best" and always crowns a winner, `rerank` asks "is this one relevant" per candidate, so several can pass or none can. Drop it in front of any search: the cookbook shows BM25 top-1 accuracy rising from 5% to 18% with one judgment per pair.
+
+```bash
+jev rerank <query> (--candidates <ref> | --files <paths...> | --lines <ref>) [options]
+```
+
+| Option | Meaning | Default |
+| --- | --- | --- |
+| `-c/-f/-l` | Candidates, same forms as `find` | |
+| `-k, --top-k <n>` | How many ranked results to return | `10` |
+| `--min <p>` | Relevance at or above which a candidate is `kept` | `0.5` |
+| `--criteria <text>` | What counts as relevant, e.g. `"a passage stating the rule, not commentary"` | |
+| `--fail-on <list>` | Exit 2 on `empty` (nothing kept) | `none` |
+
+Result: `ranked[]` with `id`, `relevance`, `kept`, `text`, plus `kept[]` ids. Up to 250 candidates per call.
+
+### `jev match`
+
+Decides whether pairs of records describe the same thing. One Score per pair with three levels that map directly to actions: `different` (leave unlinked), `unclear` (a person should look), `same` (merge). The decision is the most likely level, so there is no threshold to tune.
+
+```bash
+jev match (--pairs <ref> | --left <ref> --right <ref> | --dedupe <ref>) [--kind <text>] [options]
+```
+
+| Option | Meaning |
+| --- | --- |
+| `-p, --pairs <ref>` | JSON: `[["a","b"], ...]` or `[{"left": ..., "right": ...}]`. Items are strings or `{id, text}`. |
+| `--left <ref> --right <ref>` | Two JSON item lists; every left item is compared with every right item |
+| `-d, --dedupe <ref>` | One JSON item list; every pair within it is compared |
+| `-k, --kind <text>` | What the records are, e.g. `"customer contacts"`. Sharpens the question. |
+| `--fail-on <list>` | Exit 2 when any pair is `same`, `unclear`, or `different` |
+
+Limit: 200 pairs per call, sent in groups of 50. For large sets, block first (by postcode, name prefix, category) and match within blocks.
+
+```text
+$ jev match --dedupe @contacts.json --kind "customer contacts"
+Decision   Conf  Left                      Right
+---------  ----  ------------------------  ------------------------
+same       0.91  c_1042                    c_2210
+unclear    0.48  c_1042                    c_3187
+different  0.97  c_2210                    c_3187
+
+1 same · 1 unclear · 1 different
+```
+
+### `jev route`
+
+Picks a handler for a request and fills that handler's arguments from closed sets, all in one call. Argument questions for every handler are asked speculatively in the same request; only the chosen handler's answers are returned. A `none` handler is always available so the model can decline.
+
+```bash
+jev route [request] (--handlers <list> | --handlers-json <ref>) [options]
+```
+
+| Option | Meaning | Default |
+| --- | --- | --- |
+| `-H, --handlers <list>` | Handlers without arguments: `refund:money back,cancel:stop an order,support` | |
+| `--handlers-json <ref>` | Handlers with arguments, see below | |
+| `-i, --instructions <text>` | Replace the default routing question | |
+| `--min-confidence <p>` | Below this confidence the route is `review` | `0.6` |
+| `--state-json` | Parse the request as JSON | |
+| `--fail-on <list>` | Exit 2 on `review` or `unrouted` (no handler fits) | `none` |
+
+Handlers JSON: each value is a description string, `null`, or `{"description", "args"}`. Each arg is one of:
+
+```json
+{"type": "choice", "options": ["full", "partial"], "instructions": "optional"}
+{"type": "choice", "options": {"full": "entire order", "partial": "some items"}}
+{"type": "noul", "instructions": "Does the customer need this immediately?"}
+{"type": "score", "levels": ["calm", "annoyed", "furious"]}
+```
+
+Result: `handler` (or `null`), `confidence`, `action` (`auto`, `review`, `none`), `probabilities` over handlers, and `args` with a typed `value` per argument (`null` when the request does not say).
+
+```text
+$ jev route "cancel order 4411 and refund the whole thing, today please" --handlers-json @handlers.json
+refund  conf 0.87  auto
+[refund 0.90, cancel 0.08, support 0.01, none 0.01]
+  scope = full  conf 0.93
+  urgent = yes  p 0.88
+```
+
 ### `jev batch`
 
-Runs `classify`, `screen`, `extract`, `ask`, `verify`, or `find` over many rows with a concurrency pool. One JSON record per row, in input order.
+Runs `classify`, `screen`, `extract`, `ask`, `verify`, `find`, `rerank`, or `route` over many rows with a concurrency pool. One JSON record per row, in input order.
 
 ```bash
 jev batch <command> --input <ref> [--output <path>] [--concurrency <n>] [--fail-fast] -- <flags for that command>
@@ -395,7 +481,9 @@ The config file lives at `$JEV_CONFIG` if set, else `$XDG_CONFIG_HOME/jev/config
   "find": { "topK": 5, "found": 0.7, "absent": 0.35 },
   "classify": { "minConfidence": 0.6, "threshold": 0.5 },
   "extract": { "minConfidence": 0.6 },
-  "batch": { "concurrency": 4 }
+  "batch": { "concurrency": 4 },
+  "rerank": { "topK": 10, "min": 0.5 },
+  "route": { "minConfidence": 0.6 }
 }
 ```
 
@@ -477,6 +565,25 @@ jq -r 'select(.failed) | .id' labeled.jsonl      # the ones a human should look 
 ```bash
 for f in inbox/*.eml; do jq -n --arg id "$f" --arg text "$(cat "$f")" '{id:$id,text:$text}'; done \
   | jev batch extract -i - -- --want sender=email:the sender --want reply_by=date:the reply deadline --want amount
+```
+
+**Rerank search results before answering from them.**
+
+```bash
+my-search "$q" --json | jev rerank "$q" -c - --min 0.6 --json | jq '.kept'
+```
+
+**Dedupe a contact export, sending only the unclear pairs to a person.**
+
+```bash
+jev match --dedupe @contacts.json --kind "customer contacts" --json \
+  | jq -r '.results[] | select(.decision=="unclear") | "\(.left) ~ \(.right)"' > needs-review.txt
+```
+
+**Route chat messages to typed handlers in a bot.**
+
+```bash
+jev route "$message" --handlers-json @handlers.json --fail-on unrouted --json | jq '{handler, args}'
 ```
 
 **Find the right file, then open it.**

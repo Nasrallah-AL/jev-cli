@@ -27,6 +27,8 @@ export const partialConfigSchema = z.object({
   classify: z.object({ minConfidence: prob.optional(), threshold: prob.optional() }).optional(),
   extract: z.object({ minConfidence: prob.optional() }).optional(),
   batch: z.object({ concurrency: z.number().int().min(1).max(64).optional() }).optional(),
+  rerank: z.object({ topK: z.number().int().min(1).max(250).optional(), min: prob.optional() }).optional(),
+  route: z.object({ minConfidence: prob.optional() }).optional(),
 });
 
 /** Fully resolved config with defaults. */
@@ -47,6 +49,10 @@ export const configSchema = z.object({
   classify: z.object({ minConfidence: prob.default(0.6), threshold: prob.default(0.5) }).prefault({}),
   extract: z.object({ minConfidence: prob.default(0.6) }).prefault({}),
   batch: z.object({ concurrency: z.number().int().min(1).max(64).default(4) }).prefault({}),
+  rerank: z
+    .object({ topK: z.number().int().min(1).max(250).default(10), min: prob.default(0.5) })
+    .prefault({}),
+  route: z.object({ minConfidence: prob.default(0.6) }).prefault({}),
 });
 
 export type JevConfig = z.infer<typeof configSchema>;

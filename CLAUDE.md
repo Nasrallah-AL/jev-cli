@@ -1,6 +1,6 @@
 # CLAUDE.md
 
-TypeScript CLI (`jev`, npm package `jevctl`) wrapping TypeSafe's Jev model. Commands: `verify`, `screen`, `find`, `ask`, `classify`, `extract`, `batch`. Full user docs in `README.md`; layout and PR rules in `CONTRIBUTING.md`.
+TypeScript CLI (`jev`, npm package `jevctl`) wrapping TypeSafe's Jev model. Commands: `verify`, `screen`, `find`, `ask`, `classify`, `extract`, `rerank`, `match`, `route`, `batch`. Full user docs in `README.md`; layout and PR rules in `CONTRIBUTING.md`.
 
 ## Commands
 

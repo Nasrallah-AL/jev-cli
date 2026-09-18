@@ -10,6 +10,8 @@ import { prepareAskBatch, registerAsk } from "./ask.js";
 import { prepareClassifyBatch, registerClassify } from "./classify.js";
 import { prepareExtractBatch, registerExtract } from "./extract.js";
 import { prepareFindBatch, registerFind } from "./find.js";
+import { prepareRerankBatch, registerRerank } from "./rerank.js";
+import { prepareRouteBatch, registerRoute } from "./route.js";
 import { prepareScreenBatch, registerScreen } from "./screen.js";
 import { prepareVerifyBatch, registerVerify } from "./verify.js";
 
@@ -35,6 +37,12 @@ export const BATCHABLE: Record<string, { register: Register; prepare: Prepare; r
     prepare: prepareFindBatch,
     rowIs: "one query (candidates are shared via --files etc.)",
   },
+  rerank: {
+    register: registerRerank,
+    prepare: prepareRerankBatch,
+    rowIs: "one query (candidates are shared via --files etc.)",
+  },
+  route: { register: registerRoute, prepare: prepareRouteBatch, rowIs: "the request to route" },
 };
 
 export interface BatchFlags {
@@ -44,7 +52,13 @@ export interface BatchFlags {
   failFast?: boolean;
 }
 
-/** Parse the sub-command's own flags by running its commander definition in capture mode. */
+const PLACEHOLDER = "__jev_batch_row__";
+
+/**
+ * Parse the sub-command's own flags by running its commander definition in capture mode.
+ * Commands with a required positional (find, rerank) get a placeholder so parsing succeeds;
+ * any other positional means the user passed a text argument that each row should supply.
+ */
 export async function captureSubFlags(command: string, argv: string[]): Promise<Record<string, unknown>> {
   const entry = BATCHABLE[command];
   if (!entry)
@@ -56,12 +70,24 @@ export async function captureSubFlags(command: string, argv: string[]): Promise<
     captured = cmd.opts();
     positional = cmd.args;
   });
+  const parse = (args: string[]) => tmp.parseAsync(["node", "jev", command, ...args]);
   try {
-    await tmp.parseAsync(["node", "jev", command, ...argv]);
+    await parse(argv);
   } catch (err) {
-    throw new CliError(`Invalid ${command} flags: ${(err as Error).message.replace(/^error: /, "")}`);
+    const message = (err as Error).message ?? "";
+    if (!/missing required argument/i.test(message)) {
+      throw new CliError(`Invalid ${command} flags: ${message.replace(/^error: /, "")}`);
+    }
+    try {
+      await parse([...argv, PLACEHOLDER]);
+    } catch (err2) {
+      throw new CliError(
+        `Invalid ${command} flags: ${((err2 as Error).message ?? "").replace(/^error: /, "")}`,
+      );
+    }
   }
-  if (positional.length > 0) {
+  const leaked = positional.filter((p) => p !== PLACEHOLDER);
+  if (leaked.length > 0) {
     throw new CliError(
       `Do not pass positional input to a batched ${command}; each row supplies ${entry.rowIs}.`,
     );

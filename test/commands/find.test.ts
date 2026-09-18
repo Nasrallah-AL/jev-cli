@@ -130,6 +130,20 @@ describe("find: cli", () => {
     }
   });
 
+  test("batchable: rows are queries against shared candidates", async () => {
+    const file = join(h.dir(), "c.json");
+    writeFileSync(file, JSON.stringify({ billing: "Invoices", auth: "Rotate keys", support: "Contact" }));
+    const r = await h.run(["batch", "find", "-i", "-", "--", "-c", `@${file}`, "-k", "1"], {
+      stdin: "keys\ninvoices\n",
+    });
+    expect(r.code).toBe(0);
+    const recs = h.lines(r.stdout);
+    expect(recs.map((x) => x.result.query)).toEqual(["keys", "invoices"]);
+    expect(recs[0].result.top[0].id).toBe("auth");
+    const leak = await h.run(["batch", "find", "-i", "-", "--", "-c", `@${file}`, "extra"], { stdin: "q" });
+    expect(leak.stderr).toMatch(/positional/);
+  });
+
   test("no candidates is a usage error", async () => {
     const r = await h.run(["find", "q"]);
     expect(r.code).toBe(1);
