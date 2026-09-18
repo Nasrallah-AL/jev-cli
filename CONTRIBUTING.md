@@ -49,4 +49,4 @@ Keep question design (instructions and criteria) in `src/core/`. Keep policy (th
 
 ## Releasing
 
-Maintainers: bump the version in `package.json`, move `Unreleased` notes to a new version heading in `CHANGELOG.md`, commit, then tag `vX.Y.Z` and push the tag. The release workflow publishes to npm with provenance and creates a GitHub release. Requires an `NPM_TOKEN` repository secret.
+Maintainers: bump the version in `package.json`, move `Unreleased` notes to a new version heading in `CHANGELOG.md`, commit, then tag `vX.Y.Z` and push the tag. The release workflow publishes to npm via Trusted Publishing (GitHub OIDC, no stored token) with provenance, and creates a GitHub release from the CHANGELOG section.

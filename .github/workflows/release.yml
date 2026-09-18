@@ -11,8 +11,6 @@ permissions:
 jobs:
   publish:
     runs-on: ubuntu-latest
-    env:
-      NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -27,14 +25,14 @@ jobs:
         run: |
           PKG="v$(node -p "require('./package.json').version")"
           test "$PKG" = "${GITHUB_REF_NAME}" || { echo "tag ${GITHUB_REF_NAME} != package ${PKG}"; exit 1; }
-      - name: Publish to npm (skipped until NPM_TOKEN secret exists)
-        if: env.NPM_TOKEN != ''
+      # Trusted Publishing: npm authenticates this job via GitHub OIDC (id-token: write).
+      # No npm token is stored anywhere. Configure once on npmjs.com under the package's
+      # Settings > Trusted Publisher: GitHub Actions, owner Nasrallah-AL, repo jev-cli,
+      # workflow release.yml. Requires npm 11.5.1 or newer, hence the upgrade step.
+      - name: Upgrade npm for Trusted Publishing support
+        run: npm install -g npm@latest && npm --version
+      - name: Publish to npm
         run: npm publish --provenance --access public
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-      - name: Note when npm publish was skipped
-        if: env.NPM_TOKEN == ''
-        run: echo "::notice::NPM_TOKEN not set; skipped npm publish. Add the secret and re-run to publish."
       - name: Extract changelog section for this version
         id: notes
         run: |
