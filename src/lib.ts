@@ -1,6 +1,5 @@
 // Pure helpers with no I/O. Question design follows the TypeSafe cookbooks
-// (citation_check, llm_guardrails, semantic_find) and the jev-mcp reference
-// implementation by Joey Kudish (MIT).
+// (citation_check, llm_guardrails, semantic_find).
 
 /** Max candidates in one `find` call. TypeSafe Choice supports up to 255 options. */
 export const MAX_CANDIDATES = 250;
