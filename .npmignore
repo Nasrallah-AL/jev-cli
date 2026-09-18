@@ -10,3 +10,4 @@ tsconfig*.json
 .editorconfig
 plugin/
 .claude-plugin/
+CLAUDE.md
