@@ -7,10 +7,10 @@
   "author": "Nasr Shaer",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/Nasrallah-AL/jevctl.git"
+    "url": "git+https://github.com/Nasrallah-AL/jev-cli.git"
   },
-  "homepage": "https://github.com/Nasrallah-AL/jevctl#readme",
-  "bugs": "https://github.com/Nasrallah-AL/jevctl/issues",
+  "homepage": "https://github.com/Nasrallah-AL/jev-cli#readme",
+  "bugs": "https://github.com/Nasrallah-AL/jev-cli/issues",
   "bin": {
     "jev": "dist/cli.js"
   },

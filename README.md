@@ -1,12 +1,14 @@
-# jevctl
+# jev-cli
 
-[![CI](https://github.com/Nasrallah-AL/jevctl/actions/workflows/ci.yml/badge.svg)](https://github.com/Nasrallah-AL/jevctl/actions/workflows/ci.yml)
+[![CI](https://github.com/Nasrallah-AL/jev-cli/actions/workflows/ci.yml/badge.svg)](https://github.com/Nasrallah-AL/jev-cli/actions/workflows/ci.yml)
 [![npm](https://img.shields.io/npm/v/jevctl.svg)](https://www.npmjs.com/package/jevctl)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
 Fast, typed AI judgments from the command line, powered by TypeSafe's [Jev](https://docs.typesafe.ai) model.
 
-Jev does not generate text. You give it some content and a question with a fixed set of answers, and it returns a probability for each answer in a few hundred milliseconds for a fraction of a cent. `jevctl` wraps that into four commands you can pipe into, script around, and gate CI on.
+Installed from npm as **`jevctl`**; the command it gives you is **`jev`**.
+
+Jev does not generate text. You give it some content and a question with a fixed set of answers, and it returns a probability for each answer in a few hundred milliseconds for a fraction of a cent. `jev-cli` wraps that into four commands you can pipe into, script around, and gate CI on.
 
 | Command | Question it answers | Typical use |
 | --- | --- | --- |
@@ -412,7 +414,7 @@ if (screened.recommendation.action === "block") throw new Error(screened.recomme
 ## Development
 
 ```bash
-git clone https://github.com/Nasrallah-AL/jevctl
+git clone https://github.com/Nasrallah-AL/jev-cli
 cd jevctl
 npm install
 npm run check        # typecheck, lint, and tests. No API key needed.

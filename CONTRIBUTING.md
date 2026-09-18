@@ -5,7 +5,7 @@ Thanks for helping improve jevctl. Issues and pull requests are welcome.
 ## Setup
 
 ```bash
-git clone https://github.com/Nasrallah-AL/jevctl
+git clone https://github.com/Nasrallah-AL/jev-cli
 cd jevctl
 npm install
 npm run check
