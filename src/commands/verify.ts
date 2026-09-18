@@ -1,5 +1,6 @@
 import type { Command } from "commander";
 import type { CommandContext } from "../context.js";
+import type { BatchItemRunner } from "../core/batch.js";
 import {
   buildVerifyRequest,
   runVerify,
@@ -129,4 +130,15 @@ Examples:
 
 function collect(value: string, previous: string[]): string[] {
   return [...previous, value];
+}
+
+/** Batch: each row is one claim checked against the shared evidence. */
+export function prepareVerifyBatch(flags: VerifyFlags, ctx: CommandContext): BatchItemRunner {
+  const evidence = collectEvidence(flags);
+  const autoAccept = parseProbability("--auto-accept", flags.autoAccept, ctx.config.verify.autoAccept);
+  const failOn = parseFailOn(flags.failOn, VERIFY_FAIL_CONDITIONS, ["contradicted"]);
+  return async (row) => {
+    const output = await runVerify(ctx.ask(), { claims: [row.text], evidence, autoAccept });
+    return { output, failed: verifyFailed(output, failOn) };
+  };
 }

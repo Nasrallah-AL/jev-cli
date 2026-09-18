@@ -15,7 +15,10 @@ Jev does not generate text. You give it some content and a question with a fixed
 | `jev verify` | Does this evidence support, contradict, or ignore each claim? | Fact-check a PR description, report, or AI summary against its sources |
 | `jev screen` | Is this text trying to hijack an AI agent? Is it worth reading? | Guardrail before fetched web pages or emails enter an agent's context |
 | `jev find` | Which of these candidates best answers the query? Does any? | Pick the right file, note, or line without building a search index |
-| `jev ask` | Anything with a yes/no, pick-one, or rated answer | Classify, route, score, or extract with your own questions |
+| `jev ask` | Anything with a yes/no, pick-one, or rated answer | Route, score, or triage with your own questions |
+| `jev classify` | Which label fits? Which labels apply? Where in this hierarchy? | Label issues, route tickets, tag content |
+| `jev extract` | Which of these spans found in the text is the value I want? | Pull emails, amounts, dates, ids out of documents without hallucination |
+| `jev batch` | The same question over many rows | Run any of the above over a file at scale, with JSONL output |
 
 Every command prints a readable table by default, full JSON with `--json`, and an exit code you can branch on.
 
@@ -226,6 +229,97 @@ team: billing  conf 0.82  [billing 0.85, technical 0.08, sales 0.07]
 frustration: 1.60  conf 0.71  [0 0.10, 1 0.20, 2 0.70]
 ```
 
+### `jev classify`
+
+Assigns labels from a set you define. Three modes.
+
+```bash
+jev classify [text] (--labels a,b,c | --labels-json <ref> | --taxonomy <ref>) [--multi] [--other] [options]
+```
+
+| Mode | Flag | Returns |
+| --- | --- | --- |
+| Single (default) | `--labels a,b:description,c` | One `label`, its `confidence`, the full `probabilities`, and `action` (`auto` or `review`) |
+| Multi | `--multi` | One probability per label and `applied` (those at or above `--threshold`) |
+| Taxonomy | `--taxonomy @tree.json` | A `path` through the hierarchy, decided one level per request, with per-level confidence |
+
+| Option | Meaning | Default |
+| --- | --- | --- |
+| `-l, --labels <list>` | Comma-separated labels, optionally `label:description`. Escape a literal comma as `\,`. | |
+| `--labels-json <ref>` | Labels as `["a","b"]`, `[{"label","description"}]`, or `{"label": "description"}` | |
+| `-t, --taxonomy <ref>` | Nested JSON: `{"hardware": {"laptop": null, "phone": null}, "software": ["os", "app"]}` | |
+| `--other` | Add an `other` escape option so the model can say nothing fits | off |
+| `-i, --instructions <text>` | Replace the default question | |
+| `--min-confidence <p>` | Below this confidence the result is `review` | `0.6` |
+| `--threshold <p>` | Multi: probability at or above which a label applies | `0.5` |
+| `--state-json` | Treat the input as JSON | |
+| `--fail-on <list>` | Exit 2 on `review`, `other`, or `unlabeled` (multi: nothing applied) | `none` |
+
+```text
+$ jev classify "Login fails after the latest update" -l "bug:defect in an existing feature,feature:new capability,question" --other
+bug  conf 0.91  auto
+[bug 0.93, question 0.04, feature 0.02, other 0.01]
+```
+
+Descriptions matter: put your domain rules in them rather than in the label name. Always add `--other` when the input might not fit any label.
+
+### `jev extract`
+
+Pulls values out of text without letting the model invent them. Regexes find every candidate span in code, Jev picks the one that matches the field's meaning, and code normalizes the verbatim value.
+
+```bash
+jev extract [text] --want <field> [--want <field>...] [--context <text>] [options]
+```
+
+| Field form | Example | Meaning |
+| --- | --- | --- |
+| builtin | `--want email,phone,date` | Builtins: `email`, `phone`, `url`, `amount`, `date`, `percent`, `number` |
+| custom regex | `--want invoice=/INV-\d+/` | Your pattern, named |
+| custom regex with meaning | `--want po=/PO\s?\d{6}/:the purchase order number` | The description drives the question |
+| aliased builtin | `--want sender=email:the sender's address` | Same pattern, different meaning, so two emails can be told apart |
+
+| Option | Meaning | Default |
+| --- | --- | --- |
+| `-c, --context <text>` | What the document is, e.g. `"supplier invoice"` | |
+| `--min-confidence <p>` | Below this confidence the value is `review` | `0.6` |
+| `--fail-on <list>` | Exit 2 when any field is `review` or `missing` | `none` |
+
+Each field returns `value` (verbatim), `normalized` (lowercased email, digits-only phone, `{value, currency}` for amounts, ISO date, number), `confidence`, `action` (`auto`, `review`, or `none`), and how many `candidates` were found. A field with no regex matches is `none` and costs nothing; if no field has candidates, no API call is made.
+
+```text
+$ jev extract @invoice.txt --want amount,date --want invoice=/INV-\d+/ --context "supplier invoice"
+Field    Value          Normalized                        Conf  Action  Cands
+-------  -------------  --------------------------------  ----  ------  -----
+amount   $1,250.00      {"value":1250,"currency":"USD"}   0.97  auto    3
+date     Sept 30, 2026  2026-09-30                        0.94  auto    2
+invoice  INV-2231                                         1.00  auto    1
+```
+
+### `jev batch`
+
+Runs `classify`, `screen`, `extract`, `ask`, `verify`, or `find` over many rows with a concurrency pool. One JSON record per row, in input order.
+
+```bash
+jev batch <command> --input <ref> [--output <path>] [--concurrency <n>] [--fail-fast] -- <flags for that command>
+```
+
+| Option | Meaning | Default |
+| --- | --- | --- |
+| `-i, --input <ref>` | `@file` or `-`. Plain lines (one text per line) or JSONL objects with `text` (or `state`) and an optional `id`. Extra fields are passed through as `meta`. | required |
+| `-o, --output <path>` | Write records to a file instead of stdout | stdout |
+| `--concurrency <n>` | Parallel requests | `4` |
+| `--fail-fast` | Stop scheduling new rows after the first error | off |
+
+Everything after `--` is passed to the sub-command exactly as you would type it, minus the text argument, which each row supplies. For `verify` the row is a claim and `--evidence` is shared; for `find` the row is a query and the candidates are shared.
+
+Record shape: `{"index", "id", "ok", "failed", "result" | "error", "meta"}`. `failed` means the sub-command's `--fail-on` matched for that row. A summary line goes to stderr. Exit code is `1` if any row errored, `2` if any row matched `--fail-on`, else `0`.
+
+```bash
+jev batch classify -i @tickets.txt -- --labels billing,technical,sales --other
+jev batch screen -i @pages.jsonl -o results.jsonl --concurrency 8 -- --purpose "extract pricing"
+jev batch verify -i @claims.txt -- --evidence @spec.md --fail-on contradicted,unsupported
+```
+
 ### `jev models`
 
 Lists the models your account can use, with release dates. Requires the TypeSafe provider.
@@ -298,7 +392,10 @@ The config file lives at `$JEV_CONFIG` if set, else `$XDG_CONFIG_HOME/jev/config
   "format": "text",
   "verify": { "autoAccept": 0.8 },
   "screen": { "blockAt": 0.75, "reviewAt": 0.25 },
-  "find": { "topK": 5, "found": 0.7, "absent": 0.35 }
+  "find": { "topK": 5, "found": 0.7, "absent": 0.35 },
+  "classify": { "minConfidence": 0.6, "threshold": 0.5 },
+  "extract": { "minConfidence": 0.6 },
+  "batch": { "concurrency": 4 }
 }
 ```
 
@@ -339,6 +436,8 @@ The config file lives at `$JEV_CONFIG` if set, else `$XDG_CONFIG_HOME/jev/config
 
 **Mind what you send.** Everything you pass is sent to the configured provider. Do not include secrets or data you are not permitted to share. `--dry-run` shows the exact payload.
 
+**Use `batch` for anything over a handful of rows.** It pools requests, keeps input order, and gives you one JSONL line per row to pipe into `jq`.
+
 **Watch cost with the usage footer.** Each result reports input and output tokens. Only input tokens are billed. Batching several questions into one `jev ask` call is cheaper and faster than several calls.
 
 **Prefer direct TypeSafe.** Proxies add latency and lag behind on model versions.
@@ -363,7 +462,21 @@ fi
 **Route a support ticket in a shell script.**
 
 ```bash
-team=$(jev ask @ticket.txt --choice team="Which team?|billing,technical,sales" --json | jq -r .answers.team.choice)
+team=$(jev classify @ticket.txt -l billing,technical,sales --other --json | jq -r .label)
+```
+
+**Label a whole backlog.**
+
+```bash
+jev batch classify -i @issues.jsonl -o labeled.jsonl -- -l bug,feature,question,docs --other --fail-on review
+jq -r 'select(.failed) | .id' labeled.jsonl      # the ones a human should look at
+```
+
+**Pull structured fields from every email in a folder.**
+
+```bash
+for f in inbox/*.eml; do jq -n --arg id "$f" --arg text "$(cat "$f")" '{id:$id,text:$text}'; done \
+  | jev batch extract -i - -- --want sender=email:the sender --want reply_by=date:the reply deadline --want amount
 ```
 
 **Find the right file, then open it.**

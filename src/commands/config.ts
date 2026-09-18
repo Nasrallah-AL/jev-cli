@@ -55,6 +55,12 @@ export async function configShow(ctx: CommandContext, env: NodeJS.ProcessEnv): P
         "find.topK / found / absent",
         `${ctx.config.find.topK} / ${ctx.config.find.found} / ${ctx.config.find.absent}`,
       ],
+      [
+        "classify.minConfidence / threshold",
+        `${ctx.config.classify.minConfidence} / ${ctx.config.classify.threshold}`,
+      ],
+      ["extract.minConfidence", String(ctx.config.extract.minConfidence)],
+      ["batch.concurrency", String(ctx.config.batch.concurrency)],
     ];
     for (const [k, v] of Object.entries(payload.credentials)) rows.push([k, v ?? paint(c, "dim", "unset")]);
     const lines = [table(rows, { color: c })];

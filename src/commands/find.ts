@@ -1,6 +1,7 @@
 import { statSync } from "node:fs";
 import type { Command } from "commander";
 import type { CommandContext } from "../context.js";
+import type { BatchItemRunner } from "../core/batch.js";
 import {
   buildFindRequest,
   type CandidateInput,
@@ -129,4 +130,19 @@ Examples:
     .action(async (query: string, flags: FindFlags, cmd: Command) => {
       await run((ctx) => findAction(query, flags, ctx), cmd);
     });
+}
+
+/** Batch: each row is a query ranked against the shared candidates. */
+export function prepareFindBatch(flags: FindFlags, ctx: CommandContext): BatchItemRunner {
+  const candidates = collectCandidates(flags);
+  const topK = flags.topK === undefined ? ctx.config.find.topK : Number(flags.topK);
+  if (!Number.isInteger(topK) || topK < 1 || topK > 50)
+    throw new CliError("--top-k must be an integer from 1 to 50.");
+  const found = parseProbability("--found", flags.found, ctx.config.find.found);
+  const absent = parseProbability("--absent", flags.absent, ctx.config.find.absent);
+  const failOn = parseFailOn(flags.failOn, FIND_FAIL_CONDITIONS, []);
+  return async (row) => {
+    const output = await runFind(ctx.ask(), { query: row.text, candidates, topK, found, absent });
+    return { output, failed: findFailed(output, failOn) };
+  };
 }

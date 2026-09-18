@@ -4,6 +4,9 @@
 
 export * from "./config.js";
 export * from "./core/ask.js";
+export * from "./core/batch.js";
+export * from "./core/classify.js";
+export * from "./core/extract.js";
 export * from "./core/find.js";
 export * from "./core/screen.js";
 export * from "./core/verify.js";

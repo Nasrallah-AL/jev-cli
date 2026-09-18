@@ -1,5 +1,6 @@
 import type { Command } from "commander";
 import type { CommandContext } from "../context.js";
+import type { BatchItemRunner } from "../core/batch.js";
 import {
   buildScreenRequest,
   runScreen,
@@ -95,4 +96,15 @@ Examples:
     .action(async (text: string | undefined, flags: ScreenFlags, cmd: Command) => {
       await run((ctx) => screenAction(text, flags, ctx), cmd);
     });
+}
+
+/** Batch: each row's text is screened with the shared flags. */
+export function prepareScreenBatch(flags: ScreenFlags, ctx: CommandContext): BatchItemRunner {
+  const blockAt = parseProbability("--block-at", flags.blockAt, ctx.config.screen.blockAt);
+  const reviewAt = parseProbability("--review-at", flags.reviewAt, ctx.config.screen.reviewAt);
+  const failOn = parseFailOn(flags.failOn, SCREEN_FAIL_CONDITIONS, ["block"]);
+  return async (row) => {
+    const output = await runScreen(ctx.ask(), { text: row.text, purpose: flags.purpose, blockAt, reviewAt });
+    return { output, failed: screenFailed(output, failOn) };
+  };
 }

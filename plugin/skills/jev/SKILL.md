@@ -7,7 +7,9 @@ description: >
   pages, emails, or pasted documents for prompt injection before reading or acting on them
   (jev screen); pick which file, note, snippet, or line best answers a question without grepping
   everything (jev find); or classify, route, score, or triage text with a fixed set of answers
-  (jev ask). Each call takes a few hundred milliseconds and a fraction of a cent, returns
+  (jev ask or jev classify); pull emails, amounts, dates, or ids out of a document without
+  hallucination (jev extract); or run any of these over many rows at once (jev batch). Each call
+  takes a few hundred milliseconds and a fraction of a cent, returns
   probabilities and a confidence, and sets an exit code. Prefer it over long chain-of-thought
   for these mechanical checks, and over embeddings or grep for meaning-based lookups.
 allowed-tools:
@@ -152,6 +154,51 @@ the TypeSafe API shape and pass `--questions @q.json`.
 Design tips: ask one narrow judgment per question; include an escape option (`other`, `none`) when
 nothing may fit; describe options when labels alone are ambiguous; put domain rules in the option
 descriptions, not in your head.
+
+### classify: which label fits?
+
+```bash
+jev classify @ticket.txt -l "bug:defect in existing feature,feature:new capability,question" --other --json
+jev classify @post.md --multi -l security,performance,docs --json          # one probability per label
+jev classify @item.txt --taxonomy @tree.json --other --json                # walks a hierarchy level by level
+```
+
+Result (single): `label`, `confidence`, `action` (`auto` | `review`), `probabilities`. Multi:
+`labels[]` with `probability` and `applies`, plus `applied[]`. Taxonomy: `path[]`, `steps[]`,
+lowest `confidence`, `stopped_at_other`.
+
+Prefer `classify` over `ask --choice` when the task is "pick a bucket": it adds `--other`,
+confidence gating, multi-label, and hierarchies. Always pass `--other` unless every input is
+guaranteed to fit. Put domain rules in label descriptions.
+
+### extract: pull values without hallucination
+
+```bash
+jev extract @invoice.txt --want amount,date --want invoice=/INV-\d+/:the invoice number --context "supplier invoice" --json
+jev extract @email.txt --want sender=email:the sender --want reply_by=date:the reply deadline --json
+```
+
+Builtins: `email`, `phone`, `url`, `amount`, `date`, `percent`, `number`. Custom:
+`name=/regex/:description`. Result: `fields.<name>` with `value` (verbatim), `normalized`,
+`confidence`, `action` (`auto` | `review` | `none`), `candidates` (count found).
+
+The model can only choose among spans the regex found, so it cannot invent values. If a field
+comes back `none` with `candidates: 0`, the pattern did not match; widen the regex or check the
+text. Use `extract` instead of reading a document yourself when you need specific values.
+
+### batch: many rows, one command
+
+```bash
+jev batch classify -i @rows.jsonl -o out.jsonl -- -l a,b,c --other
+jev batch screen -i @pages.jsonl -- --purpose "extract pricing"
+jev batch verify -i @claims.txt -- --evidence @spec.md --fail-on none
+```
+
+Input: plain lines, or JSONL objects `{"id": "...", "text": "..."}` (extra fields pass through as
+`meta`). Sub-command flags go after `--`; rows replace the text argument. Output: one JSON record
+per row, input order: `{index, id, ok, failed, result | error, meta}`. Exit 1 if any row errored,
+2 if any matched `--fail-on`. Use it for more than about five items; it pools requests and gives
+you per-row results to filter with `jq`.
 
 ## Reading probabilities and confidence
 

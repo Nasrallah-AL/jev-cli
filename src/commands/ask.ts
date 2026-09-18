@@ -7,6 +7,7 @@ import {
   type RawQuestions,
   runAsk,
 } from "../core/ask.js";
+import type { BatchItemRunner } from "../core/batch.js";
 import { CliError, EXIT } from "../errors.js";
 import { parseJson, readInput, readStdin } from "../input.js";
 import { emit, formatProbability, paint, usageLine } from "../output.js";
@@ -129,4 +130,19 @@ Examples:
 
 function collect(value: string, previous: string[]): string[] {
   return [...previous, value];
+}
+
+/** Batch: each row is the state; questions are shared. Rows with a "state" field send it as-is. */
+export function prepareAskBatch(flags: AskFlags, ctx: CommandContext): BatchItemRunner {
+  const questions = resolveQuestions(flags);
+  return async (row) => {
+    const state =
+      row.state !== undefined && typeof row.state !== "string"
+        ? row.state
+        : flags.stateJson
+          ? parseJson(row.text, `row ${row.id} state`)
+          : row.text;
+    const output = await runAsk(ctx.ask(), { state, questions });
+    return { output, failed: false };
+  };
 }

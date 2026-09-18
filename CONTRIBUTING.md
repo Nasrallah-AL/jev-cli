@@ -34,16 +34,26 @@ src/
   core/           one file per judgment; pure functions that take an AskFn
   commands/       flag parsing and text rendering per command
 test/
-  *.test.ts       unit tests for lib, config, input, core, provider
-  cli.test.ts     spawns dist/cli.js against test/helpers/fake-api.ts
-  e2e.test.ts     live API, skipped without a key
+  commands/<name>.test.ts   one file per command: "<name>: core" (pure logic with a fake AskFn)
+                            and "<name>: cli" (spawns dist/cli.js against the fake API)
+  cli-global.test.ts        help, version, errors, credentials, models, config
+  lib/config/input/provider.test.ts   shared modules
+  helpers/fake-api.ts       local stand-in for api.typesafe.ai
+  helpers/fake-ask.ts       in-process fake provider for core tests
+  helpers/cli.ts            cliHarness(): spawn runner + hooks
+  e2e.test.ts               live API, skipped without a key
 ```
+
+Adding a command: `src/core/<name>.ts` (pure, takes `AskFn`), `src/commands/<name>.ts` (flags, rendering, and a
+`prepare<Name>Batch` if it takes one text input), register it in `src/cli.ts` and `BATCHABLE` in
+`src/commands/batch.ts`, export from `src/index.ts`, add `test/commands/<name>.test.ts` with both describes,
+document it in README and `plugin/skills/jev/SKILL.md`.
 
 Keep question design (instructions and criteria) in `src/core/`. Keep policy (thresholds, exit codes) in code, not in prompts. Anything a script may depend on, such as JSON field names and exit codes, is a public contract: note changes in `CHANGELOG.md`.
 
 ## Pull requests
 
-- One change per PR, with tests. CLI-visible changes should have a `test/cli.test.ts` case.
+- One change per PR, with tests. CLI-visible changes get a case in the command's `test/commands/<name>.test.ts`.
 - Update `README.md` for new flags or output fields, and add an entry under `Unreleased` in `CHANGELOG.md`.
 - CI must pass: typecheck, lint, tests on Node 20 and 22.
 

@@ -4,7 +4,10 @@
 import { createRequire } from "node:module";
 import { Command } from "commander";
 import { registerAsk } from "./commands/ask.js";
+import { registerBatch } from "./commands/batch.js";
+import { registerClassify } from "./commands/classify.js";
 import { registerConfig } from "./commands/config.js";
+import { registerExtract } from "./commands/extract.js";
 import { registerFind } from "./commands/find.js";
 import { registerModels } from "./commands/models.js";
 import { registerScreen } from "./commands/screen.js";
@@ -58,6 +61,9 @@ Docs: https://docs.typesafe.ai`,
   registerScreen(program, run);
   registerFind(program, run);
   registerAsk(program, run);
+  registerClassify(program, run);
+  registerExtract(program, run);
+  registerBatch(program, run);
   registerModels(program, run);
   registerConfig(program, run);
   return program;
