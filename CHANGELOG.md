@@ -19,6 +19,7 @@ breaking changes to flags or JSON output; they are called out below.
 - `jev compact`: verbatim context compaction for agent transcripts (Claude Code session `.jsonl` or messages JSON). Jev decides per tool call whether the call and its result still matter; nothing is summarized. `--out`, `--goal`, thresholds, `--fail-on low-reduction`. Vendors [fast-jev-compaction](https://github.com/tamaratran/fast-jev-compaction) (MIT) under `src/vendor/compaction/`.
 - Claude Code plugin: `session.compact` / `turn.complete` function hook that replaces the built-in compaction summary with the same procedure; `userConfig` options for thresholds and a `compaction` master switch. Requires `CLAUDE_CODE_ENABLE_FUNCTION_HOOKS=1`.
 - Config sections `classify`, `extract`, `batch`, `rerank`, `route`.
+- `jev auth login|status|logout`: store the API key in the macOS Keychain, Linux Secret Service, or a `0600` credentials file instead of exporting it. Keys resolve env first, then the store. `JEV_CREDENTIAL_STORE`, `JEV_CREDENTIALS`, `JEV_NO_STORED_CREDENTIALS`. `jev config` reports the key source.
 
 - Claude Code plugin (`plugin/`) with the `jev` skill and `/jev:verify`, `/jev:screen`, `/jev:find`, `/jev:ask` commands; installable via `claude plugin marketplace add Nasrallah-AL/jev-cli`.
 

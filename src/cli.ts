@@ -4,6 +4,7 @@
 import { createRequire } from "node:module";
 import { Command } from "commander";
 import { registerAsk } from "./commands/ask.js";
+import { registerAuth } from "./commands/auth.js";
 import { registerBatch } from "./commands/batch.js";
 import { registerClassify } from "./commands/classify.js";
 import { registerCompact } from "./commands/compact.js";
@@ -46,7 +47,7 @@ Exit codes:
   1  usage, configuration, input, or transport error
   2  a --fail-on judgment condition matched (e.g. a contradicted claim)
 
-Credentials (first found wins unless --provider is set):
+Credentials (first found wins unless --provider is set; environment first, then the jev auth login store):
   TYPESAFE_API_KEY                                https://console.typesafe.ai/settings/keys
   OPENROUTER_API_KEY (sk-or-...)                  OpenRouter Decisions API
   CLOUDFLARE_API_TOKEN + CLOUDFLARE_ACCOUNT_ID    Cloudflare Workers AI
@@ -73,6 +74,7 @@ Docs: https://docs.typesafe.ai`,
   registerCompact(program, run);
   registerBatch(program, run);
   registerModels(program, run);
+  registerAuth(program, run);
   registerConfig(program, run);
   return program;
 }

@@ -15,6 +15,7 @@ export * from "./core/route.js";
 export * from "./core/screen.js";
 export * from "./core/transcript.js";
 export * from "./core/verify.js";
+export * from "./credentials.js";
 export * from "./errors.js";
 export * from "./lib.js";
 export * from "./provider.js";

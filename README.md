@@ -52,14 +52,14 @@ You need Node.js 20.12 or newer and a TypeSafe API key.
    npm install -g jevctl
    ```
 
-3. Export the key and confirm it is picked up:
+3. Store the key and confirm it is picked up:
 
    ```bash
-   export TYPESAFE_API_KEY=your_key_here
-   jev config
+   jev auth login      # prompts with hidden input; saves to the OS keychain
+   jev config          # shows the resolved settings and where the key came from
    ```
 
-   `jev config` prints the resolved settings and a masked view of the key. It exits 1 if no credentials are found.
+   `jev auth login` writes to the macOS Keychain or the Linux Secret Service, and otherwise to `~/.config/jev/credentials.json` with mode `0600`. Nothing is echoed and nothing lands in your shell history or profile. Setting `TYPESAFE_API_KEY` in the environment also works and takes precedence.
 
 To try it without installing, prefix any command with `npx jevctl` instead of `jev`. The installed command is always `jev`.
 
@@ -450,6 +450,18 @@ The same procedure runs in-session through the Claude Code plugin's hook, replac
 
 Lists the models your account can use, with release dates. Requires the TypeSafe provider.
 
+### `jev auth`
+
+Keeps the API key out of shell profiles and process environments.
+
+| Subcommand | Does |
+| --- | --- |
+| `jev auth login [openrouter]` | Prompts for the key with hidden input and stores it. With `--key-stdin`, or when piped, reads one line from stdin, so password managers work: `op read "op://Private/TypeSafe/credential" \| jev auth login --key-stdin` |
+| `jev auth status` | Where each provider's key comes from: `env`, `keychain`, `file`, or `none`. Exit 1 if none. |
+| `jev auth logout [--all]` | Remove a stored key |
+
+Storage: macOS Keychain (service `jevctl`), Linux Secret Service through `secret-tool`, otherwise `~/.config/jev/credentials.json` (`0600`). Force one with `JEV_CREDENTIAL_STORE=file` or `keychain`; point the file elsewhere with `JEV_CREDENTIALS`. Resolution order at run time is the environment variable first, then the store; `JEV_NO_STORED_CREDENTIALS=1` ignores the store (useful in CI). The Claude Code hook cannot read the keychain, so for in-session compaction use the `settings.json` `env` entry or the plugin's sensitive `apiKey` option.
+
 ### `jev config`
 
 Manages the config file and shows the effective settings.
@@ -532,7 +544,7 @@ The config file lives at `$JEV_CONFIG` if set, else `$XDG_CONFIG_HOME/jev/config
 
 | Variable | Purpose |
 | --- | --- |
-| `TYPESAFE_API_KEY` | TypeSafe API key. Recommended provider; used automatically when set. |
+| `TYPESAFE_API_KEY` | TypeSafe API key. Optional when stored with `jev auth login`; takes precedence when set. |
 | `TYPESAFE_BASE_URL` | Alternate TypeSafe endpoint, for proxies or testing |
 | `OPENROUTER_API_KEY` | OpenRouter key (`sk-or-...`). Used when no TypeSafe key is present. |
 | `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` | Cloudflare Workers AI. Used when no other key is present. `JEV_CLOUDFLARE_API_TOKEN` takes precedence over `CLOUDFLARE_API_TOKEN` if you need separate credentials. |
@@ -541,6 +553,9 @@ The config file lives at `$JEV_CONFIG` if set, else `$XDG_CONFIG_HOME/jev/config
 | `JEV_TIMEOUT_MS` | Default timeout |
 | `JEV_FORMAT` | Default output format, `text` or `json` |
 | `JEV_CONFIG` | Config file path |
+| `JEV_CREDENTIALS` | Credentials file path (file store) |
+| `JEV_CREDENTIAL_STORE` | `auto` (default), `keychain`, or `file` |
+| `JEV_NO_STORED_CREDENTIALS=1` | Ignore stored keys; environment only |
 | `JEV_DEBUG=1` | Print stack traces on errors |
 
 ### Providers
@@ -649,7 +664,7 @@ jev find "$question" --lines @faq.txt --fail-on absent,partial --json
 
 | Symptom | Fix |
 | --- | --- |
-| `No credentials found` | Export `TYPESAFE_API_KEY`, then run `jev config` to confirm it is visible to the process |
+| `No credentials found` | Run `jev auth login`, or export `TYPESAFE_API_KEY`; `jev auth status` shows what was found |
 | `HTTP 401` | The key is wrong or revoked. Check it at console.typesafe.ai and re-export. |
 | `HTTP 429` | Rate limited. The TypeSafe provider retries automatically; if it persists, slow down or batch questions. |
 | `Request timed out` | Raise `--timeout` or set `JEV_TIMEOUT_MS`. Large evidence takes longer. |

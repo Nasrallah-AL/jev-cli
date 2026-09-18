@@ -2,6 +2,7 @@ import { existsSync, unlinkSync } from "node:fs";
 import type { Command } from "commander";
 import { configPath, DEFAULT_CONFIG, readConfigFile, setConfigValue, writeConfigFile } from "../config.js";
 import type { CommandContext } from "../context.js";
+import { resolveCredentials } from "../credentials.js";
 import { CliError, EXIT } from "../errors.js";
 import { emit, paint, table } from "../output.js";
 import { resolveProvider } from "../provider.js";
@@ -23,7 +24,9 @@ export function credentialReport(env: NodeJS.ProcessEnv) {
   };
 }
 
-export async function configShow(ctx: CommandContext, env: NodeJS.ProcessEnv): Promise<number> {
+/** `rawEnv` is the shell environment; `ctx.env` additionally holds stored credentials. */
+export async function configShow(ctx: CommandContext, rawEnv: NodeJS.ProcessEnv): Promise<number> {
+  const env = ctx.env;
   const path = configPath(env);
   let resolved: string | null = null;
   let problem: string | null = null;
@@ -37,6 +40,7 @@ export async function configShow(ctx: CommandContext, env: NodeJS.ProcessEnv): P
     config_file_exists: existsSync(path),
     config: ctx.config,
     credentials: credentialReport(env),
+    credential_sources: Object.fromEntries(resolveCredentials(rawEnv).map((c) => [c.provider, c.source])),
     resolved_provider: resolved,
     problem,
   };
@@ -69,6 +73,9 @@ export async function configShow(ctx: CommandContext, env: NodeJS.ProcessEnv): P
       ],
     ];
     for (const [k, v] of Object.entries(payload.credentials)) rows.push([k, v ?? paint(c, "dim", "unset")]);
+    for (const [k, v] of Object.entries(payload.credential_sources)) {
+      rows.push([`${k} key source`, v === "none" ? paint(c, "dim", "none (run: jev auth login)") : v]);
+    }
     const lines = [table(rows, { color: c })];
     if (problem) lines.push("", paint(c, "yellow", problem));
     return lines.join("\n");

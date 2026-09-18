@@ -61,6 +61,8 @@ export function cliHarness(overrides: Record<string, unknown> = {}): Harness {
         NO_COLOR: "1",
         TZ: "UTC",
         JEV_CONFIG: join(dir, "absent-config.json"),
+        JEV_CREDENTIAL_STORE: "file",
+        JEV_CREDENTIALS: join(dir, "absent-credentials.json"),
         ...(opts.noApi ? {} : { TYPESAFE_API_KEY: "test-key", TYPESAFE_BASE_URL: api.url }),
         ...opts.env,
       };

@@ -13,9 +13,11 @@ an acknowledgement within a few days.
   candidates, state) to the configured provider: TypeSafe, OpenRouter, or
   Cloudflare. Do not pass secrets or data you are not allowed to send to those
   services. `--dry-run` shows exactly what would be sent.
-- API keys are read from environment variables or, for the base URL only, the
-  config file. The config file never stores keys. `jev config` prints keys
-  masked.
+- API keys come from environment variables or from `jev auth login`, which
+  stores them in the OS keychain (macOS Keychain, Linux Secret Service) or, when
+  no keychain is available, in `~/.config/jev/credentials.json` with mode 0600.
+  The config file never stores keys. `jev config` and `jev auth status` print
+  keys masked.
 - Third-party proxies (OpenRouter, Cloudflare) add a hop; direct TypeSafe is
   the recommended default.
 - Supported versions: the latest published minor release receives fixes.

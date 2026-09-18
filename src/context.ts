@@ -1,4 +1,5 @@
 import { type JevConfig, type PartialConfig, PROVIDERS, type ProviderName, resolveConfig } from "./config.js";
+import { withStoredCredentials } from "./credentials.js";
 import { CliError } from "./errors.js";
 import { type OutputOptions, shouldColor } from "./output.js";
 import { type AskFn, createAsk } from "./provider.js";
@@ -17,6 +18,8 @@ export interface GlobalFlags {
 
 export interface CommandContext {
   config: JevConfig;
+  /** Environment with stored credentials filled in where the shell had none. */
+  env: NodeJS.ProcessEnv;
   output: OutputOptions;
   dryRun: boolean;
   /** Lazily build the provider; commands that never call Jev (dry-run, config) avoid needing credentials. */
@@ -57,7 +60,7 @@ export function flagsToConfig(flags: GlobalFlags): PartialConfig {
 }
 
 export function buildContext(flags: GlobalFlags, opts: ContextOptions = {}): CommandContext {
-  const env = opts.env ?? process.env;
+  const env = withStoredCredentials(opts.env ?? process.env);
   const config = resolveConfig({ env, flags: flagsToConfig(flags), useFile: opts.useFile });
   const output: OutputOptions = {
     format: config.format,
@@ -72,6 +75,7 @@ export function buildContext(flags: GlobalFlags, opts: ContextOptions = {}): Com
       createAsk({ provider: cfg.provider, model: cfg.model, timeoutMs: cfg.timeoutMs, env: e }));
   return {
     config,
+    env,
     output,
     dryRun: Boolean(flags.dryRun),
     ask: () => {

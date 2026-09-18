@@ -38,6 +38,6 @@ export function registerModels(
     .command("models")
     .description("List the models available to your TypeSafe account.")
     .action(async (_flags: unknown, cmd: Command) => {
-      await run((ctx) => modelsAction(ctx, process.env), cmd);
+      await run((ctx) => modelsAction(ctx, ctx.env), cmd);
     });
 }
