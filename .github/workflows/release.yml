@@ -11,6 +11,8 @@ permissions:
 jobs:
   publish:
     runs-on: ubuntu-latest
+    env:
+      NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -25,10 +27,22 @@ jobs:
         run: |
           PKG="v$(node -p "require('./package.json').version")"
           test "$PKG" = "${GITHUB_REF_NAME}" || { echo "tag ${GITHUB_REF_NAME} != package ${PKG}"; exit 1; }
-      - run: npm publish --provenance --access public
+      - name: Publish to npm (skipped until NPM_TOKEN secret exists)
+        if: env.NPM_TOKEN != ''
+        run: npm publish --provenance --access public
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+      - name: Note when npm publish was skipped
+        if: env.NPM_TOKEN == ''
+        run: echo "::notice::NPM_TOKEN not set; skipped npm publish. Add the secret and re-run to publish."
+      - name: Extract changelog section for this version
+        id: notes
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          awk -v v="$VERSION" '/^## \[/{p = index($0, "[" v "]") > 0} p' CHANGELOG.md | tail -n +2 > release-notes.md
+          echo "Notes: $(wc -l < release-notes.md) lines"
       - name: GitHub release
         uses: softprops/action-gh-release@v2
         with:
+          body_path: release-notes.md
           generate_release_notes: true
