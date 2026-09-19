@@ -7,6 +7,8 @@ breaking changes to flags or JSON output; they are called out below.
 
 ## [Unreleased]
 
+## [0.2.2] - 2026-09-19
+
 ### Added
 
 - `jev update [--check]`: checks npm for a newer `jevctl` release and installs it globally with `npm install -g jevctl@latest`; `--check` reports without installing.
