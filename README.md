@@ -56,6 +56,7 @@ Each command has its own page with options, output fields, and examples.
 | `jev auth` | Store the API key in the keychain instead of exporting it | [docs/auth.md](docs/auth.md) |
 | `jev config` | Show or edit settings; check which key source is in use | [docs/config.md](docs/config.md) |
 | `jev models` | List the models your account can use | [docs/config.md#models](docs/config.md#models) |
+| `jev update` | Check npm for a newer jevctl release and install it | [docs/update.md](docs/update.md) |
 
 ## Conventions
 

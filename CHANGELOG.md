@@ -7,6 +7,14 @@ breaking changes to flags or JSON output; they are called out below.
 
 ## [Unreleased]
 
+### Added
+
+- `jev update [--check]`: checks npm for a newer `jevctl` release and installs it globally with `npm install -g jevctl@latest`; `--check` reports without installing.
+
+### Changed
+
+- The "no credentials" and provider-specific credential errors now hint at `jev auth login` / `jev auth login openrouter`.
+
 ## [0.2.1] - 2026-09-19
 
 ### Fixed

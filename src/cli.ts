@@ -17,6 +17,7 @@ import { registerModels } from "./commands/models.js";
 import { registerRerank } from "./commands/rerank.js";
 import { registerRoute } from "./commands/route.js";
 import { registerScreen } from "./commands/screen.js";
+import { registerUpdate } from "./commands/update.js";
 import { registerVerify } from "./commands/verify.js";
 import { buildContext, type CommandContext, type GlobalFlags } from "./context.js";
 import { CliError, describeError, EXIT } from "./errors.js";
@@ -55,6 +56,7 @@ const COMMANDS: Record<string, { group: string; summary: string }> = {
   models: { group: "Account", summary: "List the models available to your account" },
   auth: { group: "Account", summary: "Store, inspect, or remove API keys (keychain or 0600 file)" },
   config: { group: "Account", summary: "Show or edit the jev configuration file" },
+  update: { group: "Account", summary: "Check npm for a newer jevctl release and install it" },
 };
 
 const HELP_FOOTER = `
@@ -130,6 +132,7 @@ export function createProgram(): Command {
   registerModels(program, run);
   registerAuth(program, run);
   registerConfig(program, run);
+  registerUpdate(program, run, version);
 
   for (const cmd of program.commands) {
     const meta = COMMANDS[cmd.name()];

@@ -61,12 +61,17 @@ export function resolveProvider(env: NodeJS.ProcessEnv, explicit: ProviderName =
 
   switch (explicit) {
     case "typesafe":
-      if (!hasTypesafe) throw new CliError("Provider is typesafe but TYPESAFE_API_KEY is not set.");
+      if (!hasTypesafe) {
+        throw new CliError(
+          "Provider is typesafe but TYPESAFE_API_KEY is not set. Run `jev auth login` to store a key.",
+        );
+      }
       return "typesafe";
     case "openrouter":
       if (!hasOpenRouter) {
         throw new CliError(
-          "Provider is openrouter but OPENROUTER_API_KEY is not set or is not an sk-or- key.",
+          "Provider is openrouter but OPENROUTER_API_KEY is not set or is not an sk-or- key. " +
+            "Run `jev auth login openrouter` to store one.",
         );
       }
       return "openrouter";
@@ -82,8 +87,9 @@ export function resolveProvider(env: NodeJS.ProcessEnv, explicit: ProviderName =
       if (hasOpenRouter) return "openrouter";
       if (hasCloudflare) return "cloudflare";
       throw new CliError(
-        "No credentials found. Set TYPESAFE_API_KEY (https://console.typesafe.ai/settings/keys), " +
-          "OPENROUTER_API_KEY (sk-or-...), or CLOUDFLARE_API_TOKEN + CLOUDFLARE_ACCOUNT_ID.",
+        "No credentials found. Run `jev auth login` to store a key, or set TYPESAFE_API_KEY " +
+          "(https://console.typesafe.ai/settings/keys), OPENROUTER_API_KEY (sk-or-...), " +
+          "or CLOUDFLARE_API_TOKEN + CLOUDFLARE_ACCOUNT_ID.",
       );
     default: {
       const never: never = explicit;
