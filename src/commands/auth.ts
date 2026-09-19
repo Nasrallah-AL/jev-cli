@@ -1,5 +1,3 @@
-import { createInterface } from "node:readline";
-import { Writable } from "node:stream";
 import type { Command } from "commander";
 import type { CommandContext } from "../context.js";
 import {
@@ -22,22 +20,48 @@ function providerArg(raw: string | undefined): CredentialProvider {
   return p as CredentialProvider;
 }
 
-/** Prompt for a secret with echo off. Falls back to reading one line from a pipe. */
+/** Prompt for a secret, echoing `*` per keystroke. Falls back to reading one line from a pipe. */
 export async function promptSecret(prompt: string): Promise<string> {
   if (!process.stdin.isTTY) return readStdin("API key").split(/\r?\n/)[0]?.trim() ?? "";
-  const muted = new Writable({
-    write(_chunk, _enc, cb) {
-      cb();
-    },
-  });
-  const rl = createInterface({ input: process.stdin, output: muted, terminal: true });
   process.stderr.write(prompt);
-  return new Promise((resolve) => {
-    rl.question("", (answer) => {
-      rl.close();
-      process.stderr.write("\n");
-      resolve(answer.trim());
-    });
+  return new Promise((resolve, reject) => {
+    const stdin = process.stdin;
+    const wasRaw = stdin.isRaw;
+    stdin.setRawMode(true);
+    stdin.resume();
+    stdin.setEncoding("utf8");
+    let input = "";
+    const cleanup = () => {
+      stdin.removeListener("data", onData);
+      stdin.setRawMode(wasRaw ?? false);
+      stdin.pause();
+    };
+    const onData = (chunk: string) => {
+      for (const char of chunk) {
+        if (char === "\r" || char === "\n") {
+          cleanup();
+          process.stderr.write("\n");
+          resolve(input.trim());
+          return;
+        }
+        if (char === "\u0003") {
+          cleanup();
+          process.stderr.write("\n");
+          reject(new CliError("Aborted."));
+          return;
+        }
+        if (char === "\u007f" || char === "\b") {
+          if (input.length > 0) {
+            input = input.slice(0, -1);
+            process.stderr.write("\b \b");
+          }
+          continue;
+        }
+        input += char;
+        process.stderr.write("*");
+      }
+    };
+    stdin.on("data", onData);
   });
 }
 
@@ -59,7 +83,7 @@ export async function authLogin(
   const store = resolveStore(env);
   const key = flags.keyStdin
     ? (readStdin("API key").split(/\r?\n/)[0]?.trim() ?? "")
-    : await promptSecret(`Paste your ${provider} API key (input hidden): `);
+    : await promptSecret(`Paste your ${provider} API key: `);
   validateKey(provider, key);
   store.set(provider, key);
   const note = env[ENV_VAR[provider]]
@@ -133,7 +157,7 @@ export function registerAuth(
   auth
     .command("login")
     .description(
-      "Prompt for a key (hidden input) and store it. Reads one line from stdin when piped or with --key-stdin.",
+      "Prompt for a key (masked input) and store it. Reads one line from stdin when piped or with --key-stdin.",
     )
     .argument("[provider]", "typesafe (default) or openrouter")
     .option("--key-stdin", "read the key from stdin (for scripts and password managers)")

@@ -7,6 +7,12 @@ breaking changes to flags or JSON output; they are called out below.
 
 ## [Unreleased]
 
+## [0.2.1] - 2026-09-19
+
+### Fixed
+
+- `jev auth login`: the key prompt now echoes `*` per keystroke instead of muting all output, so keystrokes are visibly registered. Backspace edits, Ctrl+C aborts cleanly.
+
 ## [0.2.0] - 2026-09-18
 
 ### Changed

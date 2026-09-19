@@ -43,7 +43,7 @@ which jev >/dev/null 2>&1 && jev config --json || echo "MISSING"
 
 - `MISSING`: tell the user to run `npm install -g jevctl`, or use `npx jevctl` in place of `jev`.
 - `"resolved_provider": null` with a `problem` string: no API key. Tell the user to run
-  `jev auth login` in their terminal (hidden prompt, stored in the OS keychain), or to export
+  `jev auth login` in their terminal (masked prompt, stored in the OS keychain), or to export
   `TYPESAFE_API_KEY`. Key from https://console.typesafe.ai/settings/keys. Never ask them to paste
   the key into the chat, and never run `jev auth login` yourself.
 

@@ -12,7 +12,7 @@ jev auth logout [provider] [--all]
 
 | Subcommand | Does |
 | --- | --- |
-| `login [typesafe\|openrouter]` | Prompts with hidden input and stores the key. With `--key-stdin`, or when piped, reads one line from stdin so password managers work. |
+| `login [typesafe\|openrouter]` | Prompts with masked input and stores the key. With `--key-stdin`, or when piped, reads one line from stdin so password managers work. |
 | `status` | Where each provider's key comes from: `env`, `keychain`, `file`, or `none`. Exit 1 if none. |
 | `logout [provider] [--all]` | Remove a stored key |
 
