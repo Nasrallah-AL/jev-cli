@@ -7,6 +7,10 @@ breaking changes to flags or JSON output; they are called out below.
 
 ## [Unreleased]
 
+### Fixed
+
+- `jev ask`: the short form of `--questions` is now `-Q`. It was `-q`, which the root `-q, --quiet` matched first, so `jev ask "..." -q @questions.json` failed with "too many arguments" although `--help` advertised it. `--questions` is unchanged. A test now fails if any subcommand declares a short flag that a global option already uses.
+
 ## [0.2.2] - 2026-09-19
 
 ### Added

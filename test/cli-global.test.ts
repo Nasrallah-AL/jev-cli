@@ -7,6 +7,24 @@ import { cliHarness } from "./helpers/cli.js";
 
 const h = cliHarness();
 
+const COMMANDS = [
+  "verify",
+  "screen",
+  "classify",
+  "extract",
+  "match",
+  "route",
+  "ask",
+  "find",
+  "rerank",
+  "compact",
+  "batch",
+  "models",
+  "auth",
+  "config",
+  "update",
+];
+
 describe("global behavior", () => {
   test("--version and --help list every command", async () => {
     expect((await h.run(["--version"])).stdout.trim()).toMatch(/^\d+\.\d+\.\d+/);
@@ -119,5 +137,22 @@ describe("config", () => {
     const r = await h.run(["config"], { noApi: true });
     expect(r.code).toBe(1);
     expect(r.stdout).toMatch(/No credentials found/);
+  });
+});
+
+describe("option tables", () => {
+  // Commander matches a root option before dispatching to the subcommand, so a
+  // short flag declared on both binds to the root one: the subcommand's form is
+  // unreachable even though its --help still prints it.
+  test("no subcommand short flag is shadowed by a global one", async () => {
+    const shorts = (help: string) => [...help.matchAll(/^ {2}(-[A-Za-z]), --/gm)].map((m) => m[1]!);
+    const globals = new Set(shorts((await h.run(["--help"])).stdout).filter((f) => f !== "-h"));
+    const shadowed: string[] = [];
+    for (const name of COMMANDS) {
+      for (const flag of shorts((await h.run([name, "--help"])).stdout)) {
+        if (flag !== "-h" && globals.has(flag)) shadowed.push(`${name} ${flag}`);
+      }
+    }
+    expect(shadowed).toEqual([]);
   });
 });
