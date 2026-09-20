@@ -9,6 +9,7 @@ import {
   decisionLog,
   decisionLogLines,
   type HookFetch,
+  limitAsker,
   resolveHookConfig,
   summarize,
   toSessionMessages,
@@ -121,6 +122,30 @@ describe("compactSession", () => {
     expect(lines.length).toBeGreaterThan(1);
     expect(lines[0]).toMatch(/^jev compact decisions \(1\/\d+\): /);
     for (const line of lines) expect(line.length).toBeLessThanOrEqual(80);
+  });
+
+  test("limitAsker keeps at most `concurrency` requests in flight", async () => {
+    let inFlight = 0;
+    let peak = 0;
+    const asker = limitAsker(
+      {
+        async ask() {
+          inFlight += 1;
+          peak = Math.max(peak, inFlight);
+          // No timers here: the hook tsconfig has no host types.
+          await Promise.resolve();
+          await Promise.resolve();
+          inFlight -= 1;
+          return { answers: {}, model: "jev-1.13.0", usage: { input_tokens: 1, output_tokens: 0 } };
+        },
+      },
+      2,
+    );
+    await Promise.all(Array.from({ length: 7 }, () => asker.ask("s", {})));
+    expect(peak).toBe(2);
+    expect(resolveHookConfig({}).concurrency).toBe(4);
+    expect(resolveHookConfig({ concurrency: 0 }).concurrency).toBe(1);
+    expect(resolveHookConfig({ concurrency: 500 }).concurrency).toBe(64);
   });
 
   test("throws on a missing key and on failed requests so the hook falls back", async () => {

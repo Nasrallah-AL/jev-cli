@@ -61,6 +61,7 @@ Set in the plugin's user config (`claude plugin config jev` or the plugin settin
 | `minReductionRatio` | `0.25` | Below this estimated reduction, fall back to the summary |
 | `maxStateTokens` | `25000` | Budget for the history sent to Jev |
 | `maxRequestTokens` | `30000` | Budget for history plus one batch of questions |
+| `concurrency` | `4` | Question batches in flight at once (1 to 64) |
 | `truncateHeadChars` | `300` | Characters kept from a dropped tool result |
 | `model` | `jev-latest` | Jev model |
 
