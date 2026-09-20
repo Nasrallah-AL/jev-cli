@@ -105,6 +105,14 @@ describe("models", () => {
     expect(r.stdout).toContain("jev-preview");
     expect(JSON.parse((await h.run(["models", "--json"])).stdout).models).toHaveLength(2);
   });
+
+  test("--dry-run prints the request and calls nothing", async () => {
+    const r = await h.run(["models", "--dry-run"]);
+    expect(r.code).toBe(0);
+    expect(JSON.parse(r.stdout)).toMatchObject({ command: "models", method: "GET" });
+    expect(JSON.parse(r.stdout).url).toMatch(/\/v1\/models$/);
+    expect(h.api().requests).toHaveLength(0);
+  });
 });
 
 describe("config", () => {

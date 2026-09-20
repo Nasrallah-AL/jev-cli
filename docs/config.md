@@ -72,7 +72,7 @@ Work before or after the subcommand.
 | `-m, --model <name>` | `jev-latest` or a pinned version such as `jev-1.13.0` |
 | `-P, --provider <name>` | `auto`, `typesafe`, `openrouter`, `cloudflare` |
 | `--timeout <ms>` | Per-request timeout, default 30000 |
-| `--dry-run` | Print the exact request, exit 0, no API call |
+| `--dry-run` | Print the exact request, exit 0, no API call. Every command that calls the API honors it, `models` included; `auth`, `config` and `update` never reach the API, so it does nothing there. |
 | `-q, --quiet` | Omit the token usage footer |
 | `--no-color` | Disable colors; `NO_COLOR` and `FORCE_COLOR` are honored too |
 
