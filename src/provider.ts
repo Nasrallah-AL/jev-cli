@@ -33,6 +33,8 @@ export interface ProviderOptions {
   env?: NodeJS.ProcessEnv;
   fetch?: typeof fetch;
   signal?: AbortSignal;
+  /** Where the third-party hop notice goes; defaults to stderr. */
+  notify?: (message: string) => void;
 }
 
 const USER_AGENT = "jevctl";
@@ -154,10 +156,36 @@ export function validateAnswers(
   return got;
 }
 
+const HOP_HOSTS: Record<ResolvedProvider, string> = {
+  typesafe: "api.typesafe.ai",
+  openrouter: "openrouter.ai",
+  cloudflare: "api.cloudflare.com",
+};
+
+/**
+ * `auto` falls back to a proxy when no TypeSafe key is present, and an
+ * OPENROUTER_API_KEY another tool left in the environment is enough to trigger
+ * it. Say so on stderr, so a third party is never in the path unannounced.
+ * One `AskFn` is built per command, so this prints once per run.
+ */
+export function noticeThirdPartyHop(
+  provider: ResolvedProvider,
+  requested: ProviderName,
+  notify: (message: string) => void,
+): void {
+  if (requested !== "auto" || provider === "typesafe") return;
+  notify(
+    `jev: no TypeSafe key found, using ${provider}: your state and questions pass through ` +
+      `${HOP_HOSTS[provider]}. Run \`jev auth login\` for TypeSafe direct, or pass -P ${provider} ` +
+      "to choose it deliberately and silence this.\n",
+  );
+}
+
 /** Build an `AskFn` bound to the resolved provider. */
 export function createAsk(opts: ProviderOptions): AskFn {
   const env = opts.env ?? process.env;
   const provider = resolveProvider(env, opts.provider);
+  noticeThirdPartyHop(provider, opts.provider, opts.notify ?? ((m) => process.stderr.write(m)));
   const fetchImpl = opts.fetch ?? globalThis.fetch;
   const model = providerModel(provider, opts.model);
 

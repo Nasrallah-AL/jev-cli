@@ -61,6 +61,11 @@ Settings resolve in this order, later wins: built-in defaults, config file, envi
 | OpenRouter | Alpha endpoint. Pinned versions only, so `jev-latest` maps to `typesafe/jev-1.13`. Adds a hop. |
 | Cloudflare Workers AI | Single `typesafe/jev` alias, no version pinning. Adds a hop. |
 
+With the default `auto` and no TypeSafe key, an `OPENROUTER_API_KEY` or Cloudflare pair already in your
+environment is enough to route your text through that provider. When that happens jev prints one line on
+stderr naming the host it passes through. Choosing the provider yourself, with `-P` or the config file,
+silences it.
+
 ## Global flags
 
 Work before or after the subcommand.
