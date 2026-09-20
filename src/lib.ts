@@ -162,3 +162,38 @@ export function chunk<T>(items: readonly T[], size: number): T[][] {
   for (let i = 0; i < items.length; i += size) out.push(items.slice(i, i + size));
   return out;
 }
+
+/**
+ * Wrap an async function so at most `limit` calls are in flight; the rest wait
+ * in call order. A slot is taken synchronously when it is handed over, so a
+ * caller arriving between a release and its waiter resuming cannot overshoot.
+ */
+export function limitConcurrency<A extends unknown[], R>(
+  limit: number,
+  fn: (...args: A) => Promise<R>,
+): (...args: A) => Promise<R> {
+  if (!Number.isInteger(limit) || limit < 1) throw new Error("concurrency limit must be at least 1");
+  let active = 0;
+  const waiting: Array<() => void> = [];
+  const acquire = (): Promise<void> => {
+    if (active < limit) {
+      active += 1;
+      return Promise.resolve();
+    }
+    return new Promise<void>((resolve) => {
+      waiting.push(() => {
+        active += 1;
+        resolve();
+      });
+    });
+  };
+  return async (...args: A) => {
+    await acquire();
+    try {
+      return await fn(...args);
+    } finally {
+      active -= 1;
+      waiting.shift()?.();
+    }
+  };
+}

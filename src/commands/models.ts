@@ -12,6 +12,16 @@ export async function modelsAction(ctx: CommandContext, env: NodeJS.ProcessEnv):
       `Listing models requires the typesafe provider (resolved: ${provider}). Set TYPESAFE_API_KEY.`,
     );
   }
+  const baseURL = (env.TYPESAFE_BASE_URL || "https://api.typesafe.ai").replace(/\/+$/, "");
+  if (ctx.dryRun) {
+    emit(
+      { ...ctx.output, format: "json" },
+      { command: "models", provider, method: "GET", url: `${baseURL}/v1/models` },
+      () => ({}),
+    );
+    return EXIT.OK;
+  }
+
   const client = new TypeSafeClient({
     apiKey: env.TYPESAFE_API_KEY,
     baseURL: env.TYPESAFE_BASE_URL || undefined,

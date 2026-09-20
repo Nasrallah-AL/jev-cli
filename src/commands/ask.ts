@@ -110,7 +110,7 @@ export function registerAsk(
     )
     .argument("[state]", "state text, @file, or - for stdin (default: stdin)")
     .option("--state-json", "parse the state as JSON instead of treating it as text")
-    .option("-q, --questions <ref>", "JSON questions map (@file or -), same shape as the TypeSafe API")
+    .option("-Q, --questions <ref>", "JSON questions map (@file or -), same shape as the TypeSafe API")
     .option("--noul <id=instructions>", "yes/no question (repeatable)", collect, [])
     .option(
       "--choice <id=instructions|a,b:desc,c>",

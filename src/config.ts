@@ -37,6 +37,7 @@ export const partialConfigSchema = z.object({
       maxRequestTokens: z.number().int().positive().optional(),
       truncateHead: z.number().int().min(0).optional(),
       minReduction: prob.optional(),
+      concurrency: z.number().int().min(1).max(64).optional(),
     })
     .optional(),
 });
@@ -71,6 +72,7 @@ export const configSchema = z.object({
       maxRequestTokens: z.number().int().positive().default(30_000),
       truncateHead: z.number().int().min(0).default(300),
       minReduction: prob.default(0.25),
+      concurrency: z.number().int().min(1).max(64).default(4),
     })
     .prefault({}),
 });

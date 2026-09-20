@@ -7,6 +7,16 @@ breaking changes to flags or JSON output; they are called out below.
 
 ## [Unreleased]
 
+### Added
+
+- `jev compact --concurrency <n>` (config `compact.concurrency`, default 4, 1 to 64) bounds how many question batches are in flight. Compaction sends one request per batch of candidate calls and every request carries the whole fitted state, so a long transcript used to fan out with no limit. The compaction hook takes the same bound through its `concurrency` user config. `docs/config.md` now also notes that `--timeout` is per attempt and the TypeSafe transport retries twice.
+- A one-line stderr notice when the default `auto` provider resolves to OpenRouter or Cloudflare, naming the host your state and questions pass through. An `OPENROUTER_API_KEY` another tool left in the environment was enough to add that hop silently. Selecting the provider deliberately, with `-P` or the config file, keeps it quiet.
+- `jev models --dry-run` prints the request it would make (`method`, `url`) and exits 0 without calling the API, like the judging commands. `docs/config.md` now says that `auth`, `config` and `update` never call the API, so `--dry-run` has nothing to print there.
+
+### Fixed
+
+- `jev ask`: the short form of `--questions` is now `-Q`. It was `-q`, which the root `-q, --quiet` matched first, so `jev ask "..." -q @questions.json` failed with "too many arguments" although `--help` advertised it. `--questions` is unchanged. A test now fails if any subcommand declares a short flag that a global option already uses.
+
 ## [0.2.2] - 2026-09-19
 
 ### Added

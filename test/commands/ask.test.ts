@@ -101,6 +101,14 @@ describe("ask: cli", () => {
     expect(h.api().requests[0]!.body).toMatchObject({ state: { a: 1 } });
   });
 
+  test("-Q is reachable: the short form of --questions survives the root option table", async () => {
+    const q = join(h.dir(), "q.json");
+    writeFileSync(q, JSON.stringify({ ok: { type: "noul", instructions: "Is it ok?" } }));
+    const r = await h.run(["ask", "I was charged twice", "-Q", `@${q}`, "--json"]);
+    expect(r.code).toBe(0);
+    expect(JSON.parse(r.stdout).answers.ok.noul).toBe(0.05);
+  });
+
   test("mixing --questions and shorthands, or providing neither, is an error", async () => {
     const both = await h.run(["ask", "s", "--questions", "@x.json", "--noul", "a=b"]);
     expect(both.code).toBe(1);

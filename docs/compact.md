@@ -28,12 +28,13 @@ Before handing a long session to another agent, to audit what a compaction would
 | `--max-request-tokens <n>` | Budget for history plus one batch of questions | `30000` |
 | `--truncate-head <n>` | Characters kept from a dropped result before its note | `300` |
 | `--min-reduction <p>` | Below this ratio the result is `worth_it: false` | `0.25` |
+| `--concurrency <n>` | Question batches in flight at once, 1 to 64 | `4` |
 | `-o, --out <path>` | Write the compacted transcript as messages JSON | |
 | `--fail-on <list>` | Exit 2 on `low-reduction` | `none` |
 
 ## How it fits Jev's 32k window
 
-Jev never sees the raw transcript. The state is the whole conversation with every tool output replaced by a one-line note (`ok, 4213 chars (omitted)`). If that exceeds the budget it is shrunk in stages: tool inputs truncated, long texts abridged, old messages collapsed to a note, old calls reduced to one line, old call-less messages left out. Questions (two per candidate call) are split across as many requests as needed, each resending the same state, run concurrently. Compressing the state never changes the output; it only shapes what Jev reads to decide. Token counts are estimates calibrated slightly above Jev's real counts.
+Jev never sees the raw transcript. The state is the whole conversation with every tool output replaced by a one-line note (`ok, 4213 chars (omitted)`). If that exceeds the budget it is shrunk in stages: tool inputs truncated, long texts abridged, old messages collapsed to a note, old calls reduced to one line, old call-less messages left out. Questions (two per candidate call) are split across as many requests as needed, each resending the same state. They run concurrently, at most `--concurrency` at a time (default 4), because every request in flight carries another copy of the state. Compressing the state never changes the output; it only shapes what Jev reads to decide. Token counts are estimates calibrated slightly above Jev's real counts.
 
 ## Output
 

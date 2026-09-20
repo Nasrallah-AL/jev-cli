@@ -3,9 +3,10 @@ import { join } from "node:path";
 import { describe, expect, test } from "vitest";
 import { askerFrom, compactFailed, runCompact } from "../../src/core/compact.js";
 import { parseTranscript, sessionRecordToMessage } from "../../src/core/transcript.js";
+import type { AskFn } from "../../src/provider.js";
 import type { Message } from "../../src/vendor/compaction/types.js";
 import { cliHarness } from "../helpers/cli.js";
-import { fakeAsk, yes } from "../helpers/fake-ask.js";
+import { fakeAsk, USAGE, yes } from "../helpers/fake-ask.js";
 
 // ── fixtures ────────────────────────────────────────────────────────────────
 
@@ -224,6 +225,42 @@ describe("compact: core", () => {
     ).rejects.toThrow(/Invalid Jev answer/);
     await expect(runCompact(ask, { messages: [], minReduction: 0.25 })).rejects.toThrow(/no messages/);
   });
+
+  test("question batches run bounded, not all at once", async () => {
+    // 12 candidate calls and a request budget that leaves room for one call's
+    // questions per request: the library awaits every batch together, so
+    // without a limit all 12 would be in flight, each resending the state.
+    const messages: Message[] = [message("user", "fix the failing test")];
+    for (let i = 1; i <= 12; i++) {
+      messages.push(call(`t${i}`, "Read", { file_path: `src/f${i}.ts` }), result(`t${i}`, "x".repeat(200)));
+    }
+    messages.push(message("assistant", "done"), message("user", "go ahead"));
+
+    const track = () => {
+      let inFlight = 0;
+      let peak = 0;
+      const ask: AskFn = async (_state, questions) => {
+        inFlight += 1;
+        peak = Math.max(peak, inFlight);
+        await new Promise((resolve) => setTimeout(resolve, 1));
+        inFlight -= 1;
+        const answers = Object.fromEntries(Object.keys(questions).map((id) => [id, yes(0.9)]));
+        return { answers, usage: USAGE, provider: "typesafe" as const, model: "jev-1.13.0" };
+      };
+      return { ask, peak: () => peak };
+    };
+
+    const options = { messages, minReduction: 0.25, preserveRecentMessages: 2, maxRequestTokens: 1500 };
+    const limited = track();
+    const out = await runCompact(limited.ask, { ...options, concurrency: 2 });
+    expect(out.stats.requests).toBeGreaterThan(2);
+    expect(limited.peak()).toBe(2);
+    expect(out.decisions).toHaveLength(12);
+
+    const wide = track();
+    await runCompact(wide.ask, { ...options, concurrency: 64 });
+    expect(wide.peak()).toBe(out.stats.requests);
+  });
 });
 
 // ── cli ─────────────────────────────────────────────────────────────────────
@@ -291,6 +328,12 @@ describe("compact: cli", () => {
     );
     expect((await h.run(["compact", "-", "--preserve-recent", "-1"], { stdin: "[]" })).stderr).toMatch(
       /--preserve-recent/,
+    );
+    expect((await h.run(["compact", "-", "--concurrency", "0"], { stdin: "[]" })).stderr).toMatch(
+      /--concurrency must be an integer from 1 to 64/,
+    );
+    expect((await h.run(["compact", "-", "--concurrency", "65"], { stdin: "[]" })).stderr).toMatch(
+      /--concurrency/,
     );
   });
 });

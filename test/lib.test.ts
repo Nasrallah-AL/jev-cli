@@ -2,6 +2,7 @@ import { describe, expect, test } from "vitest";
 import {
   ensureUniqueIds,
   existsVerdict,
+  limitConcurrency,
   MAX_CANDIDATES,
   parseFailOn,
   parseProbability,
@@ -103,5 +104,38 @@ describe("flag parsers", () => {
     expect(parseProbability("--x", "0.75", 0.5)).toBe(0.75);
     expect(() => parseProbability("--x", "1.5", 0.5)).toThrow(/between 0 and 1/);
     expect(() => parseProbability("--x", "abc", 0.5)).toThrow();
+  });
+});
+
+describe("limitConcurrency", () => {
+  test("keeps at most n calls in flight and still resolves every call", async () => {
+    let inFlight = 0;
+    let peak = 0;
+    const work = async (n: number) => {
+      inFlight += 1;
+      peak = Math.max(peak, inFlight);
+      await new Promise((resolve) => setTimeout(resolve, 1));
+      inFlight -= 1;
+      return n * 2;
+    };
+    const limited = limitConcurrency(3, work);
+    const results = await Promise.all([1, 2, 3, 4, 5, 6, 7].map(limited));
+    expect(results).toEqual([2, 4, 6, 8, 10, 12, 14]);
+    expect(peak).toBe(3);
+  });
+
+  test("a rejection frees its slot, so later calls still run", async () => {
+    const limited = limitConcurrency(1, async (fail: boolean) => {
+      if (fail) throw new Error("boom");
+      return "ok";
+    });
+    const failed = limited(true);
+    const after = limited(false);
+    await expect(failed).rejects.toThrow("boom");
+    await expect(after).resolves.toBe("ok");
+  });
+
+  test("rejects a limit below one", () => {
+    expect(() => limitConcurrency(0, async () => 1)).toThrow(/at least 1/);
   });
 });

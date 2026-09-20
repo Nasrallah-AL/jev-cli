@@ -26,7 +26,7 @@ Shorthand rules: `=` separates the id from the question, the first `|` separates
 | --- | --- |
 | `[state]` | Text, `@file`, or `-`. Reads stdin when omitted and piped. |
 | `--state-json` | Treat the state as JSON so you can send objects or arrays |
-| `-q, --questions <ref>` | A JSON questions map in the [TypeSafe API shape](https://docs.typesafe.ai/api), instead of shorthands |
+| `-Q, --questions <ref>` | A JSON questions map in the [TypeSafe API shape](https://docs.typesafe.ai/api), instead of shorthands |
 
 ## Example
 

@@ -18,14 +18,18 @@ export interface CompactFlags {
   maxRequestTokens?: string;
   truncateHead?: string;
   minReduction?: string;
+  concurrency?: string;
   out?: string;
   failOn?: string;
 }
 
-function int(name: string, raw: string | undefined, fallback: number, min = 0): number {
+function int(name: string, raw: string | undefined, fallback: number, min = 0, max = Infinity): number {
   if (raw === undefined) return fallback;
   const n = Number(raw);
-  if (!Number.isInteger(n) || n < min) throw new CliError(`${name} must be an integer ≥ ${min}.`);
+  if (!Number.isInteger(n) || n < min || n > max) {
+    const range = max === Infinity ? `≥ ${min}` : `from ${min} to ${max}`;
+    throw new CliError(`${name} must be an integer ${range}.`);
+  }
   return n;
 }
 
@@ -39,6 +43,7 @@ export function resolveCompactOptions(flags: CompactFlags, ctx: CommandContext) 
     maxRequestTokens: int("--max-request-tokens", flags.maxRequestTokens, c.maxRequestTokens, 1),
     truncateHeadChars: int("--truncate-head", flags.truncateHead, c.truncateHead),
     minReduction: parseProbability("--min-reduction", flags.minReduction, c.minReduction),
+    concurrency: int("--concurrency", flags.concurrency, c.concurrency, 1, 64),
     failOn: parseFailOn(flags.failOn, COMPACT_FAIL_CONDITIONS, []),
   };
 }
@@ -60,7 +65,7 @@ export async function compactAction(
   flags: CompactFlags,
   ctx: CommandContext,
 ): Promise<number> {
-  const { failOn, minReduction, ...options } = resolveCompactOptions(flags, ctx);
+  const { failOn, minReduction, concurrency, ...options } = resolveCompactOptions(flags, ctx);
   const transcript = loadTranscript(positional);
 
   if (ctx.dryRun) {
@@ -87,7 +92,12 @@ export async function compactAction(
     return EXIT.OK;
   }
 
-  const output = await runCompact(ctx.ask(), { messages: transcript.messages, minReduction, ...options });
+  const output = await runCompact(ctx.ask(), {
+    messages: transcript.messages,
+    minReduction,
+    concurrency,
+    ...options,
+  });
   if (flags.out) {
     const path = flags.out.startsWith("@") ? flags.out.slice(1) : flags.out;
     mkdirSync(dirname(path), { recursive: true });
@@ -178,6 +188,7 @@ export function registerCompact(
       "--min-reduction <p>",
       "below this reduction ratio the result is flagged not worth applying (default 0.25)",
     )
+    .option("--concurrency <n>", "question batches in flight at once, 1 to 64 (default 4)")
     .option("-o, --out <path>", "write the compacted transcript (messages JSON) here")
     .option("--fail-on <list>", "exit 2 when: low-reduction, or none (default none)")
     .addHelpText(

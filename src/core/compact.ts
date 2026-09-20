@@ -2,6 +2,7 @@
 // matter, drop or truncate only those, never summarize. Wraps the vendored
 // fast-jev-compaction library and feeds it jev-cli's provider.
 
+import { limitConcurrency } from "../lib.js";
 import type { AskFn, Usage } from "../provider.js";
 import { compact, reductionRatio } from "../vendor/compaction/compact.js";
 import type {
@@ -14,10 +15,15 @@ import type {
   Message,
 } from "../vendor/compaction/types.js";
 
+/** Matches `batch.concurrency`; the transport, not the transcript, is the constraint. */
+export const DEFAULT_CONCURRENCY = 4;
+
 export interface CompactInput extends CompactOptions {
   messages: readonly Message[];
   /** Below this reduction ratio the compaction is reported as not worth applying. */
   minReduction: number;
+  /** Question batches in flight at once. Each carries the whole fitted state. */
+  concurrency?: number;
 }
 
 export interface CompactOutput {
@@ -52,9 +58,12 @@ export function askerFrom(ask: AskFn) {
 }
 
 export async function runCompact(ask: AskFn, input: CompactInput): Promise<CompactOutput> {
-  const { messages, minReduction, ...options } = input;
+  const { messages, minReduction, concurrency = DEFAULT_CONCURRENCY, ...options } = input;
   if (messages.length === 0) throw new Error("Transcript has no messages.");
-  const { asker, usage, meta } = askerFrom(ask);
+  // The library splits the questions into batches and awaits them together, and
+  // every batch resends the whole fitted state, so an unbounded fan-out
+  // multiplies the bytes in flight by the batch count.
+  const { asker, usage, meta } = askerFrom(limitConcurrency(concurrency, ask));
   const result = await compact(messages, asker, options);
   const reduction = Number(reductionRatio(result).toFixed(4));
   const { model, provider } = meta();

@@ -27,7 +27,10 @@ const HOOK_DEFAULTS = {
   compactAtPercent: 60,
   minReductionRatio: 0.25,
   model: DEFAULT_MODEL,
+  concurrency: 4,
 };
+
+const MAX_CONCURRENCY = 64;
 
 export type HookFetchInit = { method?: string; headers?: Record<string, string>; body?: string };
 export type HookFetchResponse = { status: number; ok: boolean; text: string };
@@ -36,6 +39,8 @@ export type HookFetch = (url: string, init?: HookFetchInit) => Promise<HookFetch
 
 export type HookConfig = CompactOptions & {
   enabled: boolean;
+  /** Question batches in flight at once; each request carries the whole state. */
+  concurrency: number;
   apiKey?: string;
   compactAtPercent: number;
   minReductionRatio: number;
@@ -70,6 +75,10 @@ export function resolveHookConfig(options: PluginOptions): HookConfig {
     enabled: options['compaction'] !== false,
     compactAtPercent: optionNumber(options, 'compactAtPercent', HOOK_DEFAULTS.compactAtPercent),
     minReductionRatio: optionNumber(options, 'minReductionRatio', HOOK_DEFAULTS.minReductionRatio),
+    concurrency: Math.min(
+      MAX_CONCURRENCY,
+      Math.max(1, Math.round(optionNumber(options, 'concurrency', HOOK_DEFAULTS.concurrency))),
+    ),
     model: optionString(options, 'model') ?? HOOK_DEFAULTS.model,
   };
   const apiKey = optionString(options, 'apiKey');
@@ -80,6 +89,39 @@ export function resolveHookConfig(options: PluginOptions): HookConfig {
 }
 
 /** A `JevAsker` over the engine's `$.http.fetch`. */
+/**
+ * The library splits the questions into batches and awaits them together, and
+ * every batch resends the whole fitted state, so a long session would put one
+ * request per batch on the wire at once. Hold the extras in call order.
+ */
+export function limitAsker(asker: JevAsker, limit: number): JevAsker {
+  let active = 0;
+  const waiting: Array<() => void> = [];
+  const acquire = (): Promise<void> => {
+    if (active < limit) {
+      active += 1;
+      return Promise.resolve();
+    }
+    return new Promise<void>((resolve) => {
+      waiting.push(() => {
+        active += 1;
+        resolve();
+      });
+    });
+  };
+  return {
+    async ask(state, questions) {
+      await acquire();
+      try {
+        return await asker.ask(state, questions);
+      } finally {
+        active -= 1;
+        waiting.shift()?.();
+      }
+    },
+  };
+}
+
 export function jevAsker(fetchFn: HookFetch, apiKey: string, model: string): JevAsker {
   return {
     async ask(state, questions) {
@@ -145,7 +187,8 @@ export async function compactSession(
   fetchFn: HookFetch,
 ): Promise<SessionCompaction> {
   if (!config.apiKey) throw new Error('TYPESAFE_API_KEY is not configured');
-  const result = await compact(messages, jevAsker(fetchFn, config.apiKey, config.model), config);
+  const asker = limitAsker(jevAsker(fetchFn, config.apiKey, config.model), config.concurrency);
+  const result = await compact(messages, asker, config);
   return { result, messages: toSessionMessages(messages, result.messages) };
 }
 

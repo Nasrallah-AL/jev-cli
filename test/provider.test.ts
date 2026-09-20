@@ -129,13 +129,16 @@ describe("createAsk", () => {
       expect(JSON.parse(String(init?.body)).model).toBe(`typesafe/${OPENROUTER_LATEST}`);
       return jsonResponse({ answers: { q: { type: "noul", noul: 0.9 } } });
     });
+    const notices: string[] = [];
     const ask = createAsk({
       provider: "auto",
       model: "jev-latest",
       timeoutMs: 5000,
       env: { OPENROUTER_API_KEY: "sk-or-abc" },
       fetch: fetchMock as unknown as typeof fetch,
+      notify: (m) => notices.push(m),
     });
+    expect(notices.join("")).toMatch(/no TypeSafe key found, using openrouter.*openrouter\.ai/);
     const result = await ask("s", questions);
     expect(result.provider).toBe("openrouter");
     expect(result.answers.q.noul).toBe(0.9);
@@ -170,13 +173,16 @@ describe("createAsk", () => {
       });
     });
     const env = { CLOUDFLARE_API_TOKEN: "tok", CLOUDFLARE_ACCOUNT_ID: "acct" };
+    const notices: string[] = [];
     const ask = createAsk({
       provider: "auto",
       model: "jev-latest",
       timeoutMs: 5000,
       env,
       fetch: ok as unknown as typeof fetch,
+      notify: (m) => notices.push(m),
     });
+    expect(notices.join("")).toMatch(/api\.cloudflare\.com/);
     const result = await ask("s", questions);
     expect(result).toMatchObject({
       provider: "cloudflare",
@@ -193,5 +199,28 @@ describe("createAsk", () => {
       fetch: bad as unknown as typeof fetch,
     });
     await expect(failing("s", questions)).rejects.toThrow(/Cloudflare AI run 200: .*nope/);
+  });
+
+  test("the hop notice is silent for typesafe and for a deliberate --provider", async () => {
+    const fetchMock = vi.fn(async () => jsonResponse({ answers: { q: yes } }));
+    const notices: string[] = [];
+    const notify = (m: string) => notices.push(m);
+    createAsk({
+      provider: "auto",
+      model: "jev-latest",
+      timeoutMs: 5000,
+      env: { TYPESAFE_API_KEY: "ts-key" },
+      fetch: fetchMock as unknown as typeof fetch,
+      notify,
+    });
+    createAsk({
+      provider: "openrouter",
+      model: "jev-latest",
+      timeoutMs: 5000,
+      env: { OPENROUTER_API_KEY: "sk-or-abc" },
+      fetch: fetchMock as unknown as typeof fetch,
+      notify,
+    });
+    expect(notices).toEqual([]);
   });
 });
