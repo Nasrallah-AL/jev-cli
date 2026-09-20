@@ -51,6 +51,7 @@ Settings resolve in this order, later wins: built-in defaults, config file, envi
 | `JEV_CREDENTIALS` | Credentials file path (file store) |
 | `JEV_CREDENTIAL_STORE` | `auto`, `keychain`, or `file` |
 | `JEV_NO_STORED_CREDENTIALS=1` | Ignore stored keys; environment only |
+| `JEV_NO_UPDATE_CHECK=1` | Skip the "update available" check |
 | `JEV_DEBUG=1` | Print stack traces on errors |
 
 ## Providers

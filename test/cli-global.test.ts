@@ -1,6 +1,7 @@
 // Behavior shared by every command: version, help, errors, credentials, plus
 // the `models` and `config` commands.
 
+import { writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, test } from "vitest";
 import { cliHarness } from "./helpers/cli.js";
@@ -26,8 +27,9 @@ const COMMANDS = [
 ];
 
 describe("global behavior", () => {
-  test("--version and --help list every command", async () => {
+  test("--version, version, and --help list every command", async () => {
     expect((await h.run(["--version"])).stdout.trim()).toMatch(/^\d+\.\d+\.\d+/);
+    expect((await h.run(["version"])).stdout.trim()).toMatch(/^\d+\.\d+\.\d+/);
     const help = await h.run(["--help"]);
     expect(help.code).toBe(0);
     expect(help.stdout).toContain("Exit codes:");
@@ -41,6 +43,8 @@ describe("global behavior", () => {
       "batch",
       "models",
       "config",
+      "update",
+      "version",
     ]) {
       expect(help.stdout).toContain(cmd);
     }
@@ -94,6 +98,40 @@ describe("global behavior", () => {
     const after = await h.run(["screen", "hi", "--json"]);
     expect(JSON.parse(before.stdout).command).toBe("screen");
     expect(JSON.parse(after.stdout).command).toBe("screen");
+  });
+});
+
+describe("update warning", () => {
+  test("warns on stderr when a fresh cache says a newer version is out", async () => {
+    const cache = join(h.dir(), "update-check.json");
+    writeFileSync(cache, JSON.stringify({ latest: "99.0.0", checkedAt: Date.now() }));
+    const r = await h.run(["models"], { env: { JEV_NO_UPDATE_CHECK: "0", JEV_VERSION_CACHE: cache } });
+    expect(r.stderr).toMatch(/update available.*99\.0\.0/i);
+  });
+
+  test("stays quiet when the cache reports the current version", async () => {
+    const cache = join(h.dir(), "update-check.json");
+    writeFileSync(cache, JSON.stringify({ latest: "0.0.1", checkedAt: Date.now() }));
+    const r = await h.run(["models"], { env: { JEV_NO_UPDATE_CHECK: "0", JEV_VERSION_CACHE: cache } });
+    expect(r.stderr).not.toMatch(/update available/i);
+  });
+
+  test("--quiet and JEV_NO_UPDATE_CHECK suppress the warning", async () => {
+    const cache = join(h.dir(), "update-check.json");
+    writeFileSync(cache, JSON.stringify({ latest: "99.0.0", checkedAt: Date.now() }));
+    const quiet = await h.run(["models", "--quiet"], {
+      env: { JEV_NO_UPDATE_CHECK: "0", JEV_VERSION_CACHE: cache },
+    });
+    expect(quiet.stderr).not.toMatch(/update available/i);
+    const disabled = await h.run(["models"], { env: { JEV_VERSION_CACHE: cache } });
+    expect(disabled.stderr).not.toMatch(/update available/i);
+  });
+
+  test("the version subcommand never shows the warning", async () => {
+    const cache = join(h.dir(), "update-check.json");
+    writeFileSync(cache, JSON.stringify({ latest: "99.0.0", checkedAt: Date.now() }));
+    const env = { JEV_NO_UPDATE_CHECK: "0", JEV_VERSION_CACHE: cache };
+    expect((await h.run(["version"], { env })).stderr).not.toMatch(/update available/i);
   });
 });
 

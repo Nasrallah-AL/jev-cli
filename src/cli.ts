@@ -17,10 +17,11 @@ import { registerModels } from "./commands/models.js";
 import { registerRerank } from "./commands/rerank.js";
 import { registerRoute } from "./commands/route.js";
 import { registerScreen } from "./commands/screen.js";
-import { registerUpdate } from "./commands/update.js";
+import { npmRunner, registerUpdate } from "./commands/update.js";
 import { registerVerify } from "./commands/verify.js";
 import { buildContext, type CommandContext, type GlobalFlags } from "./context.js";
 import { CliError, describeError, EXIT } from "./errors.js";
+import { checkForUpdate } from "./versionCheck.js";
 
 const require = createRequire(import.meta.url);
 const { version, description } = require("../package.json") as { version: string; description: string };
@@ -57,6 +58,7 @@ const COMMANDS: Record<string, { group: string; summary: string }> = {
   auth: { group: "Account", summary: "Store, inspect, or remove API keys (keychain or 0600 file)" },
   config: { group: "Account", summary: "Show or edit the jev configuration file" },
   update: { group: "Account", summary: "Check npm for a newer jevctl release and install it" },
+  version: { group: "Account", summary: "Print the jev version (same as -V/--version)" },
 };
 
 const HELP_FOOTER = `
@@ -134,6 +136,13 @@ export function createProgram(): Command {
   registerConfig(program, run);
   registerUpdate(program, run, version);
 
+  program
+    .command("version")
+    .description("Print the jev version. Same as jev -V or jev --version.")
+    .action(() => {
+      process.stdout.write(`${version}\n`);
+    });
+
   for (const cmd of program.commands) {
     const meta = COMMANDS[cmd.name()];
     if (!meta) throw new Error(`jev: no help metadata for command "${cmd.name()}"`);
@@ -153,6 +162,26 @@ export function createProgram(): Command {
   return program;
 }
 
+/** Commands where an update warning would be noise rather than help. */
+const SKIP_UPDATE_CHECK = new Set(["update", "version", "help"]);
+
+function warnIfOutdated(argv: string[]): void {
+  if (process.env.JEV_NO_UPDATE_CHECK === "1") return;
+  if (argv.includes("--quiet") || argv.includes("-q")) return;
+  const command = argv.slice(2).find((a) => !a.startsWith("-"));
+  if (command && SKIP_UPDATE_CHECK.has(command)) return;
+
+  const latest = checkForUpdate({ currentVersion: version, fetchLatest: () => npmRunner().latestVersion() });
+  if (latest) {
+    process.stderr.write(
+      styleText(
+        "yellow",
+        `jev: update available (${version} -> ${latest}). Run \`jev update\` to install.\n`,
+      ),
+    );
+  }
+}
+
 export async function main(argv: string[] = process.argv): Promise<void> {
   const program = createProgram();
   try {
@@ -168,6 +197,7 @@ export async function main(argv: string[] = process.argv): Promise<void> {
     }
     if (debug && err instanceof Error && err.stack) process.stderr.write(`${err.stack}\n`);
   }
+  warnIfOutdated(argv);
 }
 
 await main();
