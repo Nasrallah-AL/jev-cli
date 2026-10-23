@@ -63,7 +63,7 @@
     "fact-check"
   ],
   "dependencies": {
-    "@typesafe-ai/sdk": "^0.6.0",
+    "@typesafe-ai/sdk": "^0.7.0",
     "commander": "^15.0.0",
     "zod": "^4.0.0"
   },
