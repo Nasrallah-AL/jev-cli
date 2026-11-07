@@ -12,6 +12,7 @@ import { registerCompact } from "./commands/compact.js";
 import { registerConfig } from "./commands/config.js";
 import { registerExtract } from "./commands/extract.js";
 import { registerFind } from "./commands/find.js";
+import { registerLocate } from "./commands/locate.js";
 import { registerMatch } from "./commands/match.js";
 import { registerModels } from "./commands/models.js";
 import { registerRerank } from "./commands/rerank.js";
@@ -46,9 +47,16 @@ const COMMANDS: Record<string, { group: string; summary: string }> = {
     group: "Judgments",
     summary: "Pick a handler for a request and fill its arguments from closed sets",
   },
-  ask: { group: "Judgments", summary: "Ask raw yes/no, choice, or score questions about any state" },
+  ask: {
+    group: "Judgments",
+    summary: "Ask raw yes/no, choice, score, or box questions about text or images",
+  },
   find: { group: "Ranking", summary: "Rank up to 250 candidates against a plain-language query" },
   rerank: { group: "Ranking", summary: "Score each candidate's relevance independently and sort" },
+  locate: {
+    group: "Images",
+    summary: "Find where things are in an image: bounding box + is-it-there probability",
+  },
   compact: {
     group: "Pipelines",
     summary: "Shrink an agent transcript by dropping stale tool calls, verbatim otherwise",
@@ -73,6 +81,7 @@ ${title("Examples:")}
   ${colorFlags('curl -s https://example.com | jev screen --purpose "extract pricing" --fail-on block,review')}
   ${colorFlags('jev classify "The invoice total is wrong" --labels billing,bug,feature --json')}
   ${colorFlags('jev find "how do I rotate API keys" --files docs/*.md -k 3')}
+  ${colorFlags('jev locate screenshot.png "the Submit button" --json')}
   ${colorFlags("jev batch classify -i @tickets.txt -- --labels billing,technical,sales")}
 
 ${title("Exit codes:")}
@@ -112,6 +121,10 @@ export function createProgram(): Command {
     .option("-m, --model <name>", "Jev model, e.g. jev-latest or jev-1.13.0")
     .option("-P, --provider <name>", "auto, typesafe, openrouter, or cloudflare")
     .option("--timeout <ms>", "per-request timeout in milliseconds")
+    .option(
+      "--long-context",
+      "allow up to 262k tokens per request (slower, less accurate; TypeSafe direct only)",
+    )
     .option("--dry-run", "print the request that would be sent and exit without calling the API")
     .optionsGroup("Options:")
     .addHelpText("after", HELP_FOOTER);
@@ -133,6 +146,7 @@ export function createProgram(): Command {
   registerAsk(program, run);
   registerFind(program, run);
   registerRerank(program, run);
+  registerLocate(program, run);
   registerCompact(program, run);
   registerBatch(program, run);
   registerModels(program, run);

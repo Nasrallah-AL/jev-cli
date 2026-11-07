@@ -11,7 +11,7 @@ npm install
 npm run check
 ```
 
-Node.js 20.12 or newer. No API key is needed for `npm run check`.
+Node.js 22 or newer. No API key is needed for `npm run check`.
 
 ## Workflow
 
@@ -63,7 +63,7 @@ Code function-hook type reference in `plugin/hooks/types/`.
 
 - One change per PR, with tests. CLI-visible changes get a case in the command's `test/commands/<name>.test.ts`.
 - Docs: each command has one page in `docs/<command>.md` with the same sections (synopsis, when to use, options, output, example). Update it for new flags or output fields; keep `README.md` to the command index and conventions. Add an entry under `Unreleased` in `CHANGELOG.md`.
-- CI must pass: typecheck, lint, tests on Node 20 and 22.
+- CI must pass: typecheck, lint, tests on Node 22 and 24.
 
 ## Releasing
 

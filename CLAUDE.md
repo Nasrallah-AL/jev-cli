@@ -1,6 +1,6 @@
 # CLAUDE.md
 
-TypeScript CLI (`jev`, npm package `jevctl`) wrapping TypeSafe's Jev model. Commands: `verify`, `screen`, `find`, `ask`, `classify`, `extract`, `rerank`, `match`, `route`, `compact`, `batch`, `auth`. `README.md` is a short front door; per-command docs live in `docs/<command>.md`, one identical layout each. Layout and PR rules in `CONTRIBUTING.md`.
+TypeScript CLI (`jev`, npm package `jevctl`) wrapping TypeSafe's Jev model. Commands: `verify`, `screen`, `find`, `ask`, `classify`, `extract`, `rerank`, `match`, `route`, `locate`, `compact`, `batch`, `auth`. Images (`src/image.ts`) are loaded and limit-checked in commands; `core/` only ever sees the SDK asset. `README.md` is a short front door; per-command docs live in `docs/<command>.md`, one identical layout each. Layout and PR rules in `CONTRIBUTING.md`.
 
 ## Commands
 

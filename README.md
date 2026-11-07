@@ -19,7 +19,7 @@ jev auth login        # paste your TypeSafe key at the hidden prompt; stored in 
 jev config            # confirms the key is found and shows the effective settings
 ```
 
-Needs Node.js 20.12+ and a key from [console.typesafe.ai/settings/keys](https://console.typesafe.ai/settings/keys). No install: `npx jevctl <command>`.
+Needs Node.js 22+ and a key from [console.typesafe.ai/settings/keys](https://console.typesafe.ai/settings/keys). No install: `npx jevctl <command>`.
 
 ## First run
 
@@ -43,14 +43,15 @@ Each command has its own page with options, output fields, and examples.
 | Command | Answers | Docs |
 | --- | --- | --- |
 | `jev verify` | Does this evidence support, contradict, or ignore each claim? | [docs/verify.md](docs/verify.md) |
-| `jev screen` | Is this text trying to hijack an AI agent? Is it worth reading? | [docs/screen.md](docs/screen.md) |
+| `jev screen` | Is this text (or screenshot) trying to hijack an AI agent? Is it worth reading? | [docs/screen.md](docs/screen.md) |
 | `jev classify` | Which label fits? Which labels apply? Where in this hierarchy? | [docs/classify.md](docs/classify.md) |
 | `jev extract` | Which span in the text is the email, amount, date, id I want? | [docs/extract.md](docs/extract.md) |
 | `jev find` | Which candidate best answers the query? Does any? | [docs/find.md](docs/find.md) |
 | `jev rerank` | How relevant is each result to the query, on its own? | [docs/rerank.md](docs/rerank.md) |
 | `jev match` | Do these two records describe the same thing? | [docs/match.md](docs/match.md) |
 | `jev route` | Which handler takes this request, with which arguments? | [docs/route.md](docs/route.md) |
-| `jev ask` | Any yes/no, pick-one, or rated question you write yourself | [docs/ask.md](docs/ask.md) |
+| `jev ask` | Any yes/no, pick-one, rated, or where-is-it question you write yourself, about text or images | [docs/ask.md](docs/ask.md) |
+| `jev locate` | Where is this in the image? Is it there at all? | [docs/locate.md](docs/locate.md) |
 | `jev compact` | Which old tool calls in this agent transcript still matter? | [docs/compact.md](docs/compact.md) |
 | `jev batch` | Any of the above, over many rows, with a concurrency pool | [docs/batch.md](docs/batch.md) |
 | `jev auth` | Store the API key in the keychain instead of exporting it | [docs/auth.md](docs/auth.md) |
@@ -68,7 +69,8 @@ Same rules for every command. Details in [docs/output.md](docs/output.md) and [d
 | Output | Table by default. `--json` for scripts, `--md` for PR comments, `--format csv\|tsv\|jsonl`, `--pluck <path>` for one value. JSON field names are a stable contract. |
 | Exit codes | `0` ok · `1` usage, config, input, or network error (stderr) · `2` a `--fail-on` condition matched. Code 2 makes `jev` a gate in `&&`, hooks, and CI. |
 | Thresholds | Defaults follow TypeSafe's cookbooks. Sample your data with `--json`, then tune via flags or [config](docs/config.md). |
-| Global flags | `--json` `--md` `--format` `--pluck` `--dry-run` `-m` `-P` `--timeout` `-q` `--no-color`, before or after the subcommand. |
+| Global flags | `--json` `--md` `--format` `--pluck` `--dry-run` `-m` `-P` `--timeout` `--long-context` `-q` `--no-color`, before or after the subcommand. |
+| Images | `locate`, `ask --image`, `classify --image`, `screen --image` take PNG/JPEG files (280 to 1568 px per side), checked locally first. Experimental at TypeSafe; TypeSafe direct only. |
 | Errors | One line on stderr, exit 1. A response that is not one answer per question is `Malformed response`, never a silent pass. |
 
 ## Claude Code plugin

@@ -18,6 +18,8 @@ const two = [
   { label: "b", description: null },
 ];
 
+import { writePng } from "../helpers/png.js";
+
 describe("classify: core / label parsing", () => {
   test("parseLabelList handles descriptions and escaped commas", () => {
     expect(parseLabelList("a,b:desc,c\\,d")).toEqual([
@@ -256,5 +258,33 @@ describe("classify: cli", () => {
       /exactly one of/,
     );
     expect((await h.run(["classify", "x", "-l", "a,b", "--fail-on", "none"])).code).toBe(0);
+  });
+});
+
+describe("classify: images", () => {
+  const h = cliHarness();
+
+  test("--image classifies a picture, with optional text alongside", async () => {
+    const img = writePng(h.dir(), "r.png");
+    const r = await h.run(["classify", "--image", img, "--labels", "receipt,invoice,menu", "--json"]);
+    expect(r.stderr).toBe("");
+    expect(r.code).toBe(0);
+    expect(JSON.parse(r.stdout).label).toBe("receipt");
+    // biome-ignore lint/suspicious/noExplicitAny: inspecting the wire format
+    const body = h.api().requests[0]!.body as any;
+    expect(Object.keys(body.state)).toEqual(["image"]);
+    expect(h.api().requests[0]!.headers["typesafe-danger-zone-images"]).toBe("true");
+    const withText = await h.run([
+      "classify",
+      "From the cafe",
+      "--image",
+      img,
+      "-l",
+      "receipt,menu",
+      "--dry-run",
+    ]);
+    const dry = JSON.parse(withText.stdout);
+    expect(dry.state.text).toBe("From the cafe");
+    expect(Object.values(dry.assets)).toEqual([expect.objectContaining({ width: 400 })]);
   });
 });

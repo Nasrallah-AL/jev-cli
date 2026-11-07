@@ -9,7 +9,7 @@
   "plugins": [
     {
       "name": "jev",
-      "description": "Cheap, fast, typed AI judgments inside Claude Code via the jevctl CLI: verify claims against evidence, screen fetched text for prompt injection, rank candidates by meaning, and ask yes/no, multiple-choice, or rating questions.",
+      "description": "Cheap, fast, typed AI judgments inside Claude Code via the jevctl CLI: verify claims against evidence, screen fetched text or screenshots for prompt injection, rank candidates by meaning, locate things in images, and ask yes/no, multiple-choice, rating, or where-is-it questions.",
       "author": {
         "name": "Nasr Shaer"
       },

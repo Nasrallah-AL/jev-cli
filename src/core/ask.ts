@@ -1,7 +1,7 @@
 // Raw System One passthrough: any state, any questions, typed answers back.
 // Question shorthands let you compose a request from flags without writing JSON.
 
-import { choice, noul, score } from "@typesafe-ai/sdk";
+import { box, choice, noul, score } from "@typesafe-ai/sdk";
 import { z } from "zod";
 import { formatZodError } from "../config.js";
 import type { AskFn, Usage } from "../provider.js";
@@ -23,6 +23,10 @@ const questionSchema = z.discriminatedUnion("type", [
     type: z.literal("score"),
     instructions: entry.optional(),
     criteria: z.array(entry).min(2),
+  }),
+  z.object({
+    type: z.literal("box"),
+    instructions: entry.optional(),
   }),
 ]);
 
@@ -84,9 +88,10 @@ export interface ShorthandFlags {
   noul?: string[];
   choice?: string[];
   score?: string[];
+  box?: string[];
 }
 
-/** Build a questions map from repeated `--noul`, `--choice`, `--score` flags. */
+/** Build a questions map from repeated `--noul`, `--choice`, `--score`, `--box` flags. */
 export function questionsFromFlags(flags: ShorthandFlags): RawQuestions {
   const questions: Record<string, unknown> = {};
   let n = 0;
@@ -113,7 +118,38 @@ export function questionsFromFlags(flags: ShorthandFlags): RawQuestions {
     const levels = options.map((o) => (o.description ? `${o.label}: ${o.description}` : o.label));
     add(id, score(instructions, levels as [string, string, ...string[]]));
   }
+  for (const raw of flags.box ?? []) {
+    const { id, instructions } = splitShorthand(raw, nextId("q"));
+    if (!instructions)
+      throw new Error(`Box "${id}" needs instructions, e.g. mug="the coffee mug in \`image\`".`);
+    add(id, box(instructions));
+  }
   return parseQuestions(questions);
+}
+
+/**
+ * Put named images into the state. Text state becomes `{text, <name>: image}`;
+ * JSON object state gets the images as extra keys; no state means images only.
+ */
+export function composeState(base: unknown, images: Array<{ name: string; asset: unknown }>): unknown {
+  if (images.length === 0) return base;
+  const named: Record<string, unknown> = {};
+  for (const { name, asset } of images) {
+    if (name in named) throw new Error(`Image name "${name}" is used twice.`);
+    named[name] = asset;
+  }
+  if (base === undefined || (typeof base === "string" && base.trim() === "")) return named;
+  if (typeof base === "string") {
+    if ("text" in named) throw new Error('Image name "text" is reserved for the text state.');
+    return { text: base, ...named };
+  }
+  if (base && typeof base === "object" && !Array.isArray(base)) {
+    for (const k of Object.keys(named)) {
+      if (k in base) throw new Error(`Image name "${k}" collides with a state field.`);
+    }
+    return { ...(base as Record<string, unknown>), ...named };
+  }
+  throw new Error("With --image, JSON state must be an object so the images can be added as fields.");
 }
 
 export interface AskInput {

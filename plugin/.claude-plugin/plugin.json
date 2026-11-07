@@ -1,7 +1,7 @@
 {
   "name": "jev",
   "version": "0.2.0",
-  "description": "Cheap, fast, typed AI judgments inside Claude Code via the jevctl CLI (verify, screen, find, classify, extract, rerank, match, route, ask, batch), plus verbatim Jev-guided context compaction that replaces the built-in summary.",
+  "description": "Cheap, fast, typed AI judgments inside Claude Code via the jevctl CLI (verify, screen, find, classify, extract, rerank, match, route, locate, ask, batch), including images and screenshots,, plus verbatim Jev-guided context compaction that replaces the built-in summary.",
   "author": {
     "name": "Nasr Shaer",
     "email": "shaer.nasrallah@gmail.com"
@@ -18,7 +18,9 @@
     "guardrails",
     "semantic-search",
     "compaction",
-    "context"
+    "context",
+    "images",
+    "bounding-box"
   ],
   "userConfig": {
     "compaction": {
@@ -79,7 +81,7 @@
       "type": "string",
       "title": "Jev model",
       "default": "jev-latest",
-      "description": "TypeSafe Jev model name, e.g. jev-latest or a pinned jev-1.13.0."
+      "description": "TypeSafe Jev model name, e.g. jev-latest or a pinned jev-1.14.0."
     }
   }
 }

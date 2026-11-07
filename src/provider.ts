@@ -6,6 +6,7 @@
 import { type Questions, TypeSafeClient } from "@typesafe-ai/sdk";
 import type { ProviderName } from "./config.js";
 import { CliError } from "./errors.js";
+import { containsAsset } from "./image.js";
 
 export type ResolvedProvider = Exclude<ProviderName, "auto">;
 
@@ -35,6 +36,47 @@ export interface ProviderOptions {
   signal?: AbortSignal;
   /** Where the third-party hop notice goes; defaults to stderr. */
   notify?: (message: string) => void;
+  /** Send `TypeSafe-Danger-Zone-Long-Context: true` (262k-token limits; slower, less accurate). */
+  longContext?: boolean;
+}
+
+/** Opt-in headers for TypeSafe's experimental ("danger zone") features. */
+export const IMAGES_HEADER = "TypeSafe-Danger-Zone-Images";
+export const LONG_CONTEXT_HEADER = "TypeSafe-Danger-Zone-Long-Context";
+
+/** Whether a request uses images or Box questions, which need the images header. */
+export function usesImages(state: unknown, questions: Record<string, unknown>): boolean {
+  const hasBox = Object.values(questions).some((q) => (q as { type?: string })?.type === "box");
+  return hasBox || containsAsset(state) || containsAsset(questions);
+}
+
+/**
+ * Headers a request needs. Images, Box, and long context exist only on TypeSafe
+ * direct; refusing them on a proxy beats a confusing upstream 400.
+ */
+export function requestHeaders(
+  provider: ResolvedProvider,
+  state: unknown,
+  questions: Record<string, unknown>,
+  longContext = false,
+): Record<string, string> {
+  const headers: Record<string, string> = {};
+  if (usesImages(state, questions)) {
+    if (provider !== "typesafe") {
+      throw new CliError(
+        `Images and box questions need the typesafe provider (resolved: ${provider}). ` +
+          "Run `jev auth login` or pass -P typesafe.",
+      );
+    }
+    headers[IMAGES_HEADER] = "true";
+  }
+  if (longContext) {
+    if (provider !== "typesafe") {
+      throw new CliError(`--long-context needs the typesafe provider (resolved: ${provider}).`);
+    }
+    headers[LONG_CONTEXT_HEADER] = "true";
+  }
+  return headers;
 }
 
 const USER_AGENT = "jevctl";
@@ -150,10 +192,18 @@ export function validateAnswers(
               ? "has no choice"
               : a.type === "score" && typeof a.score !== "number"
                 ? "has a non-numeric score"
-                : null;
+                : a.type === "box" && !isBox(a.box)
+                  ? "has no valid box edges"
+                  : null;
     if (problem) throw new CliError(`Malformed response from ${model}: answer "${id}" ${problem}.`);
   }
   return got;
+}
+
+function isBox(b: unknown): boolean {
+  if (!b || typeof b !== "object") return false;
+  const e = b as Record<string, unknown>;
+  return ["top", "bottom", "left", "right"].every((k) => typeof e[k] === "number" && Number.isFinite(e[k]));
 }
 
 const HOP_HOSTS: Record<ResolvedProvider, string> = {
@@ -200,13 +250,14 @@ export function createAsk(opts: ProviderOptions): AskFn {
       defaultHeaders: { "User-Agent": USER_AGENT },
     });
     return async (state, questions) => {
+      const headers = requestHeaders(provider, state, questions, opts.longContext);
       const response = await client.systemOne(
         {
           state: state as Parameters<typeof client.systemOne>[0]["state"],
           questions: questions as Questions,
           model,
         },
-        { signal: opts.signal },
+        { signal: opts.signal, headers },
       );
       return {
         answers: validateAnswers(questions, response.answers, response.model ?? model),
@@ -222,6 +273,7 @@ export function createAsk(opts: ProviderOptions): AskFn {
 
   if (provider === "openrouter") {
     return async (state, questions) => {
+      requestHeaders(provider, state, questions, opts.longContext);
       const response = await fetchWithTimeout(
         fetchImpl,
         "https://openrouter.ai/api/alpha/decisions",
@@ -255,6 +307,7 @@ export function createAsk(opts: ProviderOptions): AskFn {
   // Cloudflare Workers AI wraps the same contract in {model, input} and the
   // v4 {result, success} envelope. Single alias; no version pinning.
   return async (state, questions) => {
+    requestHeaders(provider, state, questions, opts.longContext);
     const response = await fetchWithTimeout(
       fetchImpl,
       `https://api.cloudflare.com/client/v4/accounts/${env.CLOUDFLARE_ACCOUNT_ID}/ai/run`,
