@@ -32,6 +32,7 @@ Label issues, route tickets, tag content, sort documents into a catalog. Prefer 
 | `--min-confidence <p>` | Below this confidence the result is `review` | `0.6` |
 | `--threshold <p>` | Multi: probability at or above which a label applies | `0.5` |
 | `--state-json` | Treat the input as JSON | |
+| `--image <path>` | Classify a PNG or JPEG. Sent in the state as `image`; text, if given, goes with it as `text`. Not batchable. TypeSafe direct only. | |
 | `--fail-on <list>` | Exit 2 on `review`, `other`, or `unlabeled` (multi: nothing applied) | `none` |
 
 ## Example

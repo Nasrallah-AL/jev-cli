@@ -6,7 +6,7 @@ Run a command over many rows with a concurrency pool. One JSON record per row, i
 jev batch <command> --input <ref> [--output <path>] [--concurrency <n>] [--fail-fast] -- <flags for that command>
 ```
 
-Batchable: `classify`, `screen`, `extract`, `ask`, `verify`, `find`, `rerank`, `route`.
+Batchable: `classify`, `screen`, `extract`, `ask`, `verify`, `find`, `rerank`, `route`, `locate` (each row is an image path; targets via `-t`).
 
 ## When to use
 

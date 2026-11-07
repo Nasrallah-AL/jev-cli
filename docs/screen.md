@@ -15,6 +15,7 @@ On every untrusted input an agent consumes: fetched web pages, emails, tickets, 
 | Option | Meaning | Default |
 | --- | --- | --- |
 | `[text]` | Text, `@file`, or `-`. Reads stdin when omitted and piped. | stdin |
+| `--image <path>` | Screen a PNG or JPEG, such as a page screenshot a computer-use agent is about to act on. The questions ask about the image, including text visible in it. Text is optional alongside. A photo with no text tends to score low on substance, so `skip` is common there; gate on `--fail-on block,review`. TypeSafe direct only. | |
 | `-p, --purpose <text>` | What the consumer is trying to do. Enables the relevance check and the `skip` action. | |
 | `--block-at <p>` | Injection probability that triggers `block` | `0.75` |
 | `--review-at <p>` | Injection probability that triggers `review` | `0.25` |

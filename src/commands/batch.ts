@@ -10,6 +10,7 @@ import { prepareAskBatch, registerAsk } from "./ask.js";
 import { prepareClassifyBatch, registerClassify } from "./classify.js";
 import { prepareExtractBatch, registerExtract } from "./extract.js";
 import { prepareFindBatch, registerFind } from "./find.js";
+import { prepareLocateBatch, registerLocate } from "./locate.js";
 import { prepareRerankBatch, registerRerank } from "./rerank.js";
 import { prepareRouteBatch, registerRoute } from "./route.js";
 import { prepareScreenBatch, registerScreen } from "./screen.js";
@@ -44,6 +45,11 @@ export const BATCHABLE: Record<string, { register: Register; prepare: Prepare; r
     rowIs: "one query (candidates are shared via --files etc.)",
   },
   route: { register: registerRoute, prepare: prepareRouteBatch, rowIs: "the request to route" },
+  locate: {
+    register: registerLocate,
+    prepare: prepareLocateBatch,
+    rowIs: "one image path (targets are shared via -t)",
+  },
 };
 
 export interface BatchFlags {
@@ -223,7 +229,7 @@ export function registerBatch(
   program
     .command("batch")
     .description(
-      "Run classify, screen, extract, ask, verify, or find over many rows with a concurrency pool. Emits JSONL.",
+      `Run ${Object.keys(BATCHABLE).join(", ")} over many rows with a concurrency pool. Emits JSONL.`,
     )
     .argument("<command>", `one of: ${Object.keys(BATCHABLE).join(", ")}`)
     .argument("[args...]", "flags for that command, after --")
@@ -247,7 +253,8 @@ Examples:
   jev batch classify --input @tickets.txt -- --labels billing,technical,sales --other
   jev batch screen -i @pages.jsonl -o results.jsonl --concurrency 8 -- --purpose "extract pricing"
   jev batch extract -i @emails.jsonl -- --want sender=email --want date
-  jev batch verify -i @claims.txt -- --evidence @spec.md --fail-on contradicted,unsupported`,
+  jev batch verify -i @claims.txt -- --evidence @spec.md --fail-on contradicted,unsupported
+  ls frames/*.jpg | jev batch locate -i - -- -t "a bird at the feeder" --fail-on absent`,
     )
     .action(async (command: string, args: string[], flags: BatchFlags, cmd: Command) => {
       await run(

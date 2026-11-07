@@ -202,3 +202,37 @@ describe("option tables", () => {
     expect(shadowed).toEqual([]);
   });
 });
+
+describe("long context", () => {
+  const h = cliHarness();
+
+  test("--long-context and JEV_LONG_CONTEXT send the long-context header; default does not", async () => {
+    await h.run(["ask", "x", "--noul", "q=?", "--long-context"]);
+    await h.run(["ask", "x", "--noul", "q=?"], { env: { JEV_LONG_CONTEXT: "1" } });
+    await h.run(["ask", "x", "--noul", "q=?"]);
+    const sent = h.api().requests.map((r) => r.headers["typesafe-danger-zone-long-context"]);
+    expect(sent).toEqual(["true", "true", undefined]);
+  });
+
+  test("an over-length request suggests --long-context", async () => {
+    const { startFakeApi } = await import("./helpers/fake-api.js");
+    const { createServer } = await import("node:http");
+    const server = createServer((_req, res) => {
+      res.statusCode = 400;
+      res.setHeader("content-type", "application/json");
+      res.end(JSON.stringify({ error: { type: "max_tokens_exceeded", message: "too long" } }));
+    });
+    await new Promise<void>((resolve) => server.listen(0, "127.0.0.1", resolve));
+    const port = (server.address() as { port: number }).port;
+    try {
+      const r = await h.run(["ask", "x", "--noul", "q=?"], {
+        env: { TYPESAFE_BASE_URL: `http://127.0.0.1:${port}` },
+      });
+      expect(r.code).toBe(1);
+      expect(r.stderr).toMatch(/hint: .*--long-context/);
+    } finally {
+      await new Promise((resolve) => server.close(resolve));
+    }
+    void startFakeApi;
+  });
+});

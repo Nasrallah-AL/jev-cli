@@ -3,6 +3,7 @@ import { buildScreenRequest, runScreen, screenFailed } from "../../src/core/scre
 import { cliHarness } from "../helpers/cli.js";
 import { startFakeApi } from "../helpers/fake-api.js";
 import { fakeAsk, yes } from "../helpers/fake-ask.js";
+import { writePng } from "../helpers/png.js";
 
 describe("screen: core", () => {
   test("adds the relevance question only when a purpose is given", () => {
@@ -80,5 +81,33 @@ describe("screen: cli", () => {
     expect(body.state).toEqual({ content: "hi there", purpose: "p" });
     expect(Object.keys(body.questions)).toEqual(["injection", "substance", "relevance"]);
     expect(h.api().requests).toHaveLength(0);
+  });
+});
+
+describe("screen: images", () => {
+  const h = cliHarness({ injection: yes(0.9), substance: yes(0.9) });
+
+  test("text wording is unchanged; image wording names the image", () => {
+    const text = buildScreenRequest({ text: "t" });
+    // biome-ignore lint/suspicious/noExplicitAny: question payloads
+    expect((text.questions.injection as any).instructions).toMatch(/^The text contains/);
+    const img = buildScreenRequest({ text: "", image: "IMG" });
+    // biome-ignore lint/suspicious/noExplicitAny: question payloads
+    expect((img.questions.injection as any).instructions).toMatch(
+      /^The image \(including any text visible in it\)/,
+    );
+    expect(img.state).toEqual({ content: "IMG", purpose: null });
+    expect(buildScreenRequest({ text: "caption", image: "IMG" }).state.content).toEqual({
+      text: "caption",
+      image: "IMG",
+    });
+  });
+
+  test("--image screens a screenshot without any text", async () => {
+    const img = writePng(h.dir(), "page.png");
+    const r = await h.run(["screen", "--image", img]);
+    expect(r.code).toBe(2);
+    expect(r.stdout).toMatch(/^BLOCK/);
+    expect(h.api().requests[0]!.parts).toHaveLength(1);
   });
 });

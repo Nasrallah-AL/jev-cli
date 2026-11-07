@@ -11,6 +11,8 @@ import {
 import { cliHarness } from "../helpers/cli.js";
 import { fakeAsk, yes } from "../helpers/fake-ask.js";
 
+import { writePng } from "../helpers/png.js";
+
 describe("ask: core", () => {
   test("splitShorthand and splitOptions", () => {
     expect(splitShorthand("urgent=Is it urgent?", "q1")).toEqual({
@@ -116,5 +118,59 @@ describe("ask: cli", () => {
     const neither = await h.run(["ask", "s"]);
     expect(neither.code).toBe(1);
     expect(neither.stderr).toMatch(/Provide questions/);
+  });
+});
+
+describe("ask: images and box", () => {
+  const h = cliHarness();
+
+  test("--box shorthand builds a box question", () => {
+    expect(questionsFromFlags({ box: ["mug=the mug in `image`"] })).toEqual({
+      mug: { type: "box", instructions: "the mug in `image`" },
+    });
+    expect(() => questionsFromFlags({ box: ["mug="] })).toThrow(/needs instructions/);
+    expect(parseQuestions({ b: { type: "box", instructions: "x" } })).toEqual({
+      b: { type: "box", instructions: "x" },
+    });
+  });
+
+  test("--image adds named images to text state and sends them as file parts", async () => {
+    const img = writePng(h.dir(), "door.png");
+    const r = await h.run([
+      "ask",
+      "Front door camera",
+      "--image",
+      `door=${img}`,
+      "--noul",
+      "person=Is there a person in `door`?",
+      "--box",
+      "where=the person in `door`",
+      "--json",
+    ]);
+    expect(r.stderr).toBe("");
+    expect(r.code).toBe(0);
+    const out = JSON.parse(r.stdout);
+    expect(out.answers.where).toMatchObject({ type: "box", confidence: 0.92 });
+    const req = h.api().requests[0]!;
+    expect(req.headers["typesafe-danger-zone-images"]).toBe("true");
+    // biome-ignore lint/suspicious/noExplicitAny: inspecting the wire format
+    const body = req.body as any;
+    expect(body.state.text).toBe("Front door camera");
+    expect(body.assets[body.state.door]).toMatchObject({ part: req.parts![0]!.name });
+  });
+
+  test("--image needs no text state; text output shows box edges", async () => {
+    const img = writePng(h.dir(), "p.png");
+    const r = await h.run(["ask", "--image", img, "--box", "mug=the mug in `image`"]);
+    expect(r.code).toBe(0);
+    expect(r.stdout).toMatch(/mug: box 0\.440,0\.250,0\.840,0\.820 \(l,t,r,b\)\s+conf 0\.92/);
+    // biome-ignore lint/suspicious/noExplicitAny: inspecting the wire format
+    expect(Object.keys((h.api().requests[0]!.body as any).state)).toEqual(["image"]);
+  });
+
+  test("text-only requests do not send the images header", async () => {
+    const r = await h.run(["ask", "hello", "--noul", "q=Is this a greeting?"]);
+    expect(r.code).toBe(0);
+    expect(h.api().requests[0]!.headers["typesafe-danger-zone-images"]).toBeUndefined();
   });
 });

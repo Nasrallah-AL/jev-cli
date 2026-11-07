@@ -7,11 +7,28 @@ breaking changes to flags or JSON output; they are called out below.
 
 ## [Unreleased]
 
+Catches up with Jev 1.14 and `@typesafe-ai/sdk` 0.7.0 (2026-10-14): images, Box questions, and long context.
+
 ### Added
+
+- `jev locate <image> [targets...]`: where each target is in a PNG or JPEG. One Box question per target plus a companion Noul asking whether it is there at all, in one request, because a Box always returns four edges. Results carry `status` (`found`, `low`, `absent`), `present`, `confidence`, `box` (fractions) and `pixels` (`x`, `y`, `width`, `height`). `--present-at`, `--min-confidence` (config `locate.*`), `--no-presence`, `--context`, `--fail-on absent,low`. Batchable: `jev batch locate -i @paths.txt -- -t "..."`. Needs Jev 1.14.
+- `jev ask --image <name=path>` (repeatable) adds images to the state, and `--box id=instructions` asks a Box question. `--questions` files accept `box` questions. Text output prints box edges.
+- `jev classify --image <path>` and `jev screen --image <path>`: classify a picture, or screen a screenshot for instructions aimed at an agent. Text wording of `screen` is unchanged; with an image the questions name the image.
+- Images are checked locally against TypeSafe's limits (PNG or JPEG, 280 to 1568 px per side, 16 MiB, not animated) before any request, with a resize hint. They are sent as multipart file parts with the `TypeSafe-Danger-Zone-Images` header, which `jev` adds whenever a request has an image or a Box question. Dry runs list them under `assets` (path, format, size), never the bytes.
+- `--long-context` (config `longContext`, `JEV_LONG_CONTEXT=1`) sends `TypeSafe-Danger-Zone-Long-Context: true`, raising both context limits to 262k tokens.
+- Errors from the API now carry a one-line `hint:`: context overflow suggests `--long-context`; 401, 413, 429 and 529 say what to do next.
+- Library exports `runLocate`, `buildLocateRequest`, `loadImage`, `probeImage`, `composeState`.
 
 - `jev compact --concurrency <n>` (config `compact.concurrency`, default 4, 1 to 64) bounds how many question batches are in flight. Compaction sends one request per batch of candidate calls and every request carries the whole fitted state, so a long transcript used to fan out with no limit. The compaction hook takes the same bound through its `concurrency` user config. `docs/config.md` now also notes that `--timeout` is per attempt and the TypeSafe transport retries twice.
 - A one-line stderr notice when the default `auto` provider resolves to OpenRouter or Cloudflare, naming the host your state and questions pass through. An `OPENROUTER_API_KEY` another tool left in the environment was enough to add that hop silently. Selecting the provider deliberately, with `-P` or the config file, keeps it quiet.
 - `jev models --dry-run` prints the request it would make (`method`, `url`) and exits 0 without calling the API, like the judging commands. `docs/config.md` now says that `auth`, `config` and `update` never call the API, so `--dry-run` has nothing to print there.
+
+### Changed
+
+- Requires Node.js 22 or newer (was 20.12), following `@typesafe-ai/sdk` 0.7.0. CI tests Node 22 and 24.
+- TypeSafe requests of 1 KiB or more are zstd-compressed by the SDK on Node 22.15+.
+- Images, Box questions, and `--long-context` are refused up front on the OpenRouter and Cloudflare providers rather than failing upstream.
+- Box answers are validated like the others: an answer without four numeric edges is `Malformed response`.
 
 ### Fixed
 

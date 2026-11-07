@@ -12,6 +12,7 @@ export interface GlobalFlags {
   model?: string;
   provider?: string;
   timeout?: string;
+  longContext?: boolean;
   color?: boolean;
   quiet?: boolean;
   dryRun?: boolean;
@@ -51,6 +52,7 @@ export function flagsToConfig(flags: GlobalFlags): PartialConfig {
       throw new CliError("--timeout must be a positive number of milliseconds.");
     out.timeoutMs = n;
   }
+  if (flags.longContext) out.longContext = true;
   if (flags.json) out.format = "json";
   else if (flags.md) out.format = "md";
   else if (flags.format) {
@@ -77,7 +79,13 @@ export function buildContext(flags: GlobalFlags, opts: ContextOptions = {}): Com
   const factory =
     opts.askFactory ??
     ((cfg: JevConfig, e: NodeJS.ProcessEnv) =>
-      createAsk({ provider: cfg.provider, model: cfg.model, timeoutMs: cfg.timeoutMs, env: e }));
+      createAsk({
+        provider: cfg.provider,
+        model: cfg.model,
+        timeoutMs: cfg.timeoutMs,
+        longContext: cfg.longContext,
+        env: e,
+      }));
   return {
     config,
     env,

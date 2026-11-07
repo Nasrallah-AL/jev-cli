@@ -22,6 +22,7 @@ Settings resolve in this order, later wins: built-in defaults, config file, envi
   "provider": "auto",
   "model": "jev-latest",
   "timeoutMs": 30000,
+  "longContext": false,
   "format": "text",
   "verify":   { "autoAccept": 0.8 },
   "screen":   { "blockAt": 0.75, "reviewAt": 0.25 },
@@ -30,6 +31,7 @@ Settings resolve in this order, later wins: built-in defaults, config file, envi
   "extract":  { "minConfidence": 0.6 },
   "rerank":   { "topK": 10, "min": 0.5 },
   "route":    { "minConfidence": 0.6 },
+  "locate":   { "presentAt": 0.5, "minConfidence": 0.5 },
   "compact":  { "keepThreshold": 0.5, "preserveRecent": 6, "maxStateTokens": 25000, "maxRequestTokens": 30000, "truncateHead": 300, "minReduction": 0.25, "concurrency": 4 },
   "batch":    { "concurrency": 4 }
 }
@@ -46,6 +48,7 @@ Settings resolve in this order, later wins: built-in defaults, config file, envi
 | `JEV_PROVIDER` | Force `typesafe`, `openrouter`, or `cloudflare` |
 | `JEV_MODEL` | Default model |
 | `JEV_TIMEOUT_MS` | Default per-request timeout |
+| `JEV_LONG_CONTEXT=1` | Send every request with long context on (same as `--long-context`) |
 | `JEV_FORMAT` | Default output format: `text`, `json`, `jsonl`, `md`, `csv`, `tsv` |
 | `JEV_CONFIG` | Config file path |
 | `JEV_CREDENTIALS` | Credentials file path (file store) |
@@ -58,7 +61,7 @@ Settings resolve in this order, later wins: built-in defaults, config file, envi
 
 | Provider | Notes |
 | --- | --- |
-| TypeSafe (direct) | Recommended. Lowest latency, `jev-latest` alias, pinned versions, automatic retries with backoff. |
+| TypeSafe (direct) | Recommended. Lowest latency, `jev-latest` and `jev-preview` aliases, pinned versions, automatic retries with backoff, zstd-compressed requests. The only provider for images, `locate`, and `--long-context`. |
 | OpenRouter | Alpha endpoint. Pinned versions only, so `jev-latest` maps to `typesafe/jev-1.13`. Adds a hop. |
 | Cloudflare Workers AI | Single `typesafe/jev` alias, no version pinning. Adds a hop. |
 
@@ -75,13 +78,14 @@ Work before or after the subcommand.
 | --- | --- |
 | `--json`, `--md`, `--format <name>` | `text`, `json`, `jsonl`, `md`, `csv`, `tsv`; see [Output formats](output.md) |
 | `--pluck <path>` | Print one value from the JSON result |
-| `-m, --model <name>` | `jev-latest` or a pinned version such as `jev-1.13.0` |
+| `-m, --model <name>` | `jev-latest`, `jev-preview`, or a pinned version such as `jev-1.14.0` |
 | `-P, --provider <name>` | `auto`, `typesafe`, `openrouter`, `cloudflare` |
 | `--timeout <ms>` | Per-request timeout, default 30000. It is per attempt: the TypeSafe transport retries twice with backoff, so one failing request can take up to three attempts. |
+| `--long-context` | Raise both context limits (64k per request, 32k per question) to 262k tokens by sending `TypeSafe-Danger-Zone-Long-Context: true`. Same price per token, but slower and less accurate, so use it only for requests that need it. TypeSafe direct only. A request over the default limit fails with a hint to add it. |
 | `--dry-run` | Print the exact request, exit 0, no API call. Every command that calls the API honors it, `models` included; `auth`, `config` and `update` never reach the API, so it does nothing there. |
 | `-q, --quiet` | Omit the token usage footer |
 | `--no-color` | Disable colors; `NO_COLOR` and `FORCE_COLOR` are honored too |
 
 ## Models
 
-`jev models` lists the models your account can use, with release dates. TypeSafe provider only. Pin a version with `-m jev-1.13.0` once you have tuned thresholds, so an alias update does not shift results.
+`jev models` lists the models your account can use, with release dates. TypeSafe provider only. Pin a version with `-m jev-1.14.0` once you have tuned thresholds, so an alias update does not shift results. `jev-latest` is the newest stable release; `jev-preview` moves ahead of it when a preview build exists. Box questions (`locate`, `ask --box`) need Jev 1.14 or later; images work on 1.13 and 1.14.

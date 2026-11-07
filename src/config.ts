@@ -14,6 +14,7 @@ export const partialConfigSchema = z.object({
   provider: z.enum(PROVIDERS).optional(),
   model: z.string().min(1).optional(),
   timeoutMs: z.number().int().positive().optional(),
+  longContext: z.boolean().optional(),
   format: z.enum(["text", "json", "jsonl", "csv", "tsv", "md"]).optional(),
   verify: z.object({ autoAccept: prob.optional() }).optional(),
   screen: z.object({ blockAt: prob.optional(), reviewAt: prob.optional() }).optional(),
@@ -29,6 +30,7 @@ export const partialConfigSchema = z.object({
   batch: z.object({ concurrency: z.number().int().min(1).max(64).optional() }).optional(),
   rerank: z.object({ topK: z.number().int().min(1).max(250).optional(), min: prob.optional() }).optional(),
   route: z.object({ minConfidence: prob.optional() }).optional(),
+  locate: z.object({ presentAt: prob.optional(), minConfidence: prob.optional() }).optional(),
   compact: z
     .object({
       keepThreshold: prob.optional(),
@@ -47,6 +49,7 @@ export const configSchema = z.object({
   provider: z.enum(PROVIDERS).default("auto"),
   model: z.string().min(1).default("jev-latest"),
   timeoutMs: z.number().int().positive().default(30_000),
+  longContext: z.boolean().default(false),
   format: z.enum(["text", "json", "jsonl", "csv", "tsv", "md"]).default("text"),
   verify: z.object({ autoAccept: prob.default(0.8) }).prefault({}),
   screen: z.object({ blockAt: prob.default(0.75), reviewAt: prob.default(0.25) }).prefault({}),
@@ -64,6 +67,7 @@ export const configSchema = z.object({
     .object({ topK: z.number().int().min(1).max(250).default(10), min: prob.default(0.5) })
     .prefault({}),
   route: z.object({ minConfidence: prob.default(0.6) }).prefault({}),
+  locate: z.object({ presentAt: prob.default(0.5), minConfidence: prob.default(0.5) }).prefault({}),
   compact: z
     .object({
       keepThreshold: prob.default(0.5),
@@ -122,6 +126,9 @@ export function configFromEnv(env: NodeJS.ProcessEnv): PartialConfig {
     out.timeoutMs = n;
   }
   if (env.JEV_FORMAT) out.format = env.JEV_FORMAT;
+  if (env.JEV_LONG_CONTEXT !== undefined && env.JEV_LONG_CONTEXT !== "") {
+    out.longContext = env.JEV_LONG_CONTEXT === "1" || env.JEV_LONG_CONTEXT.toLowerCase() === "true";
+  }
   return out as PartialConfig;
 }
 

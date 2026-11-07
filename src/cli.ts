@@ -12,6 +12,7 @@ import { registerCompact } from "./commands/compact.js";
 import { registerConfig } from "./commands/config.js";
 import { registerExtract } from "./commands/extract.js";
 import { registerFind } from "./commands/find.js";
+import { registerLocate } from "./commands/locate.js";
 import { registerMatch } from "./commands/match.js";
 import { registerModels } from "./commands/models.js";
 import { registerRerank } from "./commands/rerank.js";
@@ -46,9 +47,16 @@ const COMMANDS: Record<string, { group: string; summary: string }> = {
     group: "Judgments",
     summary: "Pick a handler for a request and fill its arguments from closed sets",
   },
-  ask: { group: "Judgments", summary: "Ask raw yes/no, choice, or score questions about any state" },
+  ask: {
+    group: "Judgments",
+    summary: "Ask raw yes/no, choice, score, or box questions about text or images",
+  },
   find: { group: "Ranking", summary: "Rank up to 250 candidates against a plain-language query" },
   rerank: { group: "Ranking", summary: "Score each candidate's relevance independently and sort" },
+  locate: {
+    group: "Images",
+    summary: "Find where things are in an image: bounding box + is-it-there probability",
+  },
   compact: {
     group: "Pipelines",
     summary: "Shrink an agent transcript by dropping stale tool calls, verbatim otherwise",
@@ -61,25 +69,30 @@ const COMMANDS: Record<string, { group: string; summary: string }> = {
   version: { group: "Account", summary: "Print the jev version (same as -V/--version)" },
 };
 
+const title = (s: string) => styleText("bold", s);
+const flag = (s: string) => styleText("green", s);
+const arg = (s: string) => styleText("yellow", s);
+/** Colors `--flag`/`-f` tokens green, matching styleOptionText below. */
+const colorFlags = (s: string) => s.replace(/(--?[a-zA-Z][\w-]*)/g, (m) => flag(m));
+
 const HELP_FOOTER = `
-Examples:
-  jev verify "Helmets are optional for adults" --evidence @ordinance.txt
-  curl -s https://example.com | jev screen --purpose "extract pricing" --fail-on block,review
-  jev classify "The invoice total is wrong" --labels billing,bug,feature --json
-  jev find "how do I rotate API keys" --files docs/*.md -k 3
-  jev batch classify -i @tickets.txt -- --labels billing,technical,sales
+${title("Examples:")}
+  ${colorFlags('jev verify "Helmets are optional for adults" --evidence @ordinance.txt')}
+  ${colorFlags('curl -s https://example.com | jev screen --purpose "extract pricing" --fail-on block,review')}
+  ${colorFlags('jev classify "The invoice total is wrong" --labels billing,bug,feature --json')}
+  ${colorFlags('jev find "how do I rotate API keys" --files docs/*.md -k 3')}
+  ${colorFlags('jev locate screenshot.png "the Submit button" --json')}
+  ${colorFlags("jev batch classify -i @tickets.txt -- --labels billing,technical,sales")}
 
-Exit codes:
-  0  success
-  1  usage, configuration, input, or transport error
-  2  a --fail-on judgment condition matched (e.g. a contradicted claim)
+${title("Exit codes:")}
+  ${arg("0")}  success
+  ${arg("1")}  usage, configuration, input, or transport error
+  ${arg("2")}  a --fail-on judgment condition matched (e.g. a contradicted claim)
 
-Credentials (first found wins unless --provider is set; environment first, then the jev auth login store):
-  TYPESAFE_API_KEY                                https://console.typesafe.ai/settings/keys
-  OPENROUTER_API_KEY (sk-or-...)                  OpenRouter Decisions API
-  CLOUDFLARE_API_TOKEN + CLOUDFLARE_ACCOUNT_ID    Cloudflare Workers AI
-
-Website: https://jevcli.vectorz.app   Docs: https://docs.typesafe.ai   Per-command help: jev <command> --help`;
+${title("Credentials")} (first found wins unless --provider is set; environment first, then the jev auth login store):
+  ${arg("TYPESAFE_API_KEY")}                                https://console.typesafe.ai/settings/keys
+  ${arg("OPENROUTER_API_KEY")} (sk-or-...)                  OpenRouter Decisions API
+  ${arg("CLOUDFLARE_API_TOKEN")} + ${arg("CLOUDFLARE_ACCOUNT_ID")}    Cloudflare Workers AI`;
 
 export function createProgram(): Command {
   const program = new Command();
@@ -91,11 +104,11 @@ export function createProgram(): Command {
     .showSuggestionAfterError()
     .configureHelp({
       helpWidth: Math.min(process.stdout.columns || 100, 110),
-      styleTitle: (s) => styleText("bold", s),
+      styleTitle: title,
       styleCommandText: (s) => styleText("cyan", s),
       styleSubcommandText: (s) => styleText("cyan", s),
-      styleOptionText: (s) => styleText("green", s),
-      styleArgumentText: (s) => styleText("yellow", s),
+      styleOptionText: flag,
+      styleArgumentText: arg,
     })
     .optionsGroup("Output:")
     .option("--json", "print results as JSON (same as --format json)")
@@ -108,6 +121,10 @@ export function createProgram(): Command {
     .option("-m, --model <name>", "Jev model, e.g. jev-latest or jev-1.13.0")
     .option("-P, --provider <name>", "auto, typesafe, openrouter, or cloudflare")
     .option("--timeout <ms>", "per-request timeout in milliseconds")
+    .option(
+      "--long-context",
+      "allow up to 262k tokens per request (slower, less accurate; TypeSafe direct only)",
+    )
     .option("--dry-run", "print the request that would be sent and exit without calling the API")
     .optionsGroup("Options:")
     .addHelpText("after", HELP_FOOTER);
@@ -129,6 +146,7 @@ export function createProgram(): Command {
   registerAsk(program, run);
   registerFind(program, run);
   registerRerank(program, run);
+  registerLocate(program, run);
   registerCompact(program, run);
   registerBatch(program, run);
   registerModels(program, run);

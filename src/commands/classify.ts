@@ -1,5 +1,6 @@
 import type { Command } from "commander";
 import type { CommandContext } from "../context.js";
+import { composeState } from "../core/ask.js";
 import type { BatchItemRunner } from "../core/batch.js";
 import {
   type AnyClassifyOutput,
@@ -17,6 +18,7 @@ import {
   type Taxonomy,
 } from "../core/classify.js";
 import { CliError, EXIT } from "../errors.js";
+import { dryRunAssets, type LoadedImage, loadImage } from "../image.js";
 import { parseJson, readInput, readStdin } from "../input.js";
 import { parseFailOn, parseProbability } from "../lib.js";
 import { emit, formatProbability, paint, type View } from "../output.js";
@@ -31,6 +33,7 @@ export interface ClassifyFlags {
   minConfidence?: string;
   threshold?: string;
   stateJson?: boolean;
+  image?: string;
   failOn?: string;
 }
 
@@ -74,12 +77,23 @@ export function resolveClassifyFlags(flags: ClassifyFlags, ctx: CommandContext):
   }
 }
 
-export function resolveClassifyText(positional: string | undefined, flags: ClassifyFlags): unknown {
-  let raw: string;
+export function resolveClassifyText(
+  positional: string | undefined,
+  flags: ClassifyFlags,
+  img?: LoadedImage,
+): unknown {
+  let raw: string | undefined;
   if (positional !== undefined) raw = readInput(positional, "text");
   else if (!process.stdin.isTTY) raw = readStdin("text");
-  else throw new CliError("Provide text as an argument, @file, or pipe it on stdin.");
-  return flags.stateJson ? parseJson(raw, "text") : raw;
+  else if (!img) throw new CliError("Provide text as an argument, @file, or pipe it on stdin.");
+  if (!img) return flags.stateJson ? parseJson(raw!, "text") : raw;
+  const base =
+    raw === undefined || raw.trim() === "" ? undefined : flags.stateJson ? parseJson(raw, "text") : raw;
+  try {
+    return composeState(base, [{ name: "image", asset: img.asset }]);
+  } catch (err) {
+    throw new CliError((err as Error).message);
+  }
 }
 
 async function classifyOne(
@@ -121,7 +135,9 @@ export async function classifyAction(
   ctx: CommandContext,
 ): Promise<number> {
   const r = resolveClassifyFlags(flags, ctx);
-  const text = resolveClassifyText(positional, flags);
+  const img = flags.image ? loadImage(flags.image) : undefined;
+  const text = resolveClassifyText(positional, flags, img);
+  const assets = img ? { assets: dryRunAssets([img]) } : {};
 
   if (ctx.dryRun) {
     if (r.mode === "taxonomy") {
@@ -132,6 +148,7 @@ export async function classifyAction(
           note: "taxonomy runs one request per level; showing the first",
           state: text,
           taxonomy: r.taxonomy,
+          ...assets,
         },
         () => ({}),
       );
@@ -148,7 +165,7 @@ export async function classifyAction(
           });
     emit(
       { ...ctx.output, format: "json" },
-      { model: ctx.config.model, state: built.state, questions: built.questions },
+      { model: ctx.config.model, state: built.state, questions: built.questions, ...assets },
       () => ({}),
     );
     return EXIT.OK;
@@ -216,6 +233,11 @@ export function renderClassify(out: AnyClassifyOutput, ctx: CommandContext): Vie
 /** Batch: each row is classified with the shared label set. */
 export function prepareClassifyBatch(flags: ClassifyFlags, ctx: CommandContext): BatchItemRunner {
   const r = resolveClassifyFlags(flags, ctx);
+  if (flags.image) {
+    throw new CliError(
+      "classify --image cannot be batched; use `jev batch ask` with --image, or `jev batch locate`.",
+    );
+  }
   return async (row) => {
     const text =
       row.state !== undefined && flags.stateJson
@@ -253,6 +275,7 @@ export function registerClassify(
     .option("--min-confidence <p>", "confidence below which the result is flagged 'review' (default 0.6)")
     .option("--threshold <p>", "--multi: probability at or above which a label applies (default 0.5)")
     .option("--state-json", "parse the text as JSON")
+    .option("--image <path>", "classify a PNG/JPEG (sent as `image`; text, if any, goes with it)")
     .option(
       "--fail-on <list>",
       `exit 2 when: ${CLASSIFY_FAIL_CONDITIONS.join(", ")} (--multi: nothing applied), or none (default none)`,
@@ -264,7 +287,8 @@ Examples:
   jev classify @ticket.txt --labels billing,technical,sales --other
   jev classify "Login fails after update" -l "bug:defect in existing feature,feature:new capability,question" --fail-on review
   jev classify @post.md --multi --labels security,performance,docs --threshold 0.6
-  jev classify @item.txt --taxonomy @catalog.json --other`,
+  jev classify @item.txt --taxonomy @catalog.json --other
+  jev classify --image receipt.jpg --labels "receipt,invoice,menu,other photo"`,
     )
     .action(async (text: string | undefined, flags: ClassifyFlags, cmd: Command) => {
       await run((ctx) => classifyAction(text, flags, ctx), cmd);

@@ -1,6 +1,6 @@
 # jev plugin for Claude Code
 
-Gives Claude Code the `jev` skill and four slash commands so it can get cheap, fast, calibrated
+Gives Claude Code the `jev` skill and `/jev:*` slash commands so it can get cheap, fast, calibrated
 judgments from TypeSafe's Jev model instead of reasoning them out at length.
 
 | Command | Does |
@@ -8,8 +8,9 @@ judgments from TypeSafe's Jev model instead of reasoning them out at length.
 | `/jev:verify` | Fact-check claims against evidence |
 | `/jev:screen` | Check a URL, file, or text for prompt injection before reading it |
 | `/jev:find` | Pick the files or lines that best answer a question, by meaning |
-| `/jev:ask` | Ask yes/no, multiple-choice, or rating questions about text |
+| `/jev:ask` | Ask yes/no, multiple-choice, rating, or where-is-it questions about text or images |
 | `/jev:classify`, `/jev:extract`, `/jev:route` | Label text, pull values out of documents, route requests to handlers |
+| `/jev:locate` | Find where something is in an image or screenshot (box + is-it-there) |
 | `/jev:compact` | Compact a session transcript offline and show what would be dropped |
 
 The skill also loads automatically when Claude decides a judgment fits the task, for example
@@ -17,7 +18,7 @@ screening a fetched page or checking its own summary against a source.
 
 ## Requirements
 
-- The `jevctl` npm package: `npm install -g jevctl` (provides the `jev` command). Node 20.12+.
+- The `jevctl` npm package: `npm install -g jevctl` (provides the `jev` command). Node 22+.
 - A TypeSafe API key in `TYPESAFE_API_KEY`. Get one at https://console.typesafe.ai/settings/keys.
 
 ## Install
