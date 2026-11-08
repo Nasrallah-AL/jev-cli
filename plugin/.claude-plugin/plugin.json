@@ -1,6 +1,6 @@
 {
   "name": "jev",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Cheap, fast, typed AI judgments inside Claude Code via the jevctl CLI (verify, screen, find, classify, extract, rerank, match, route, locate, ask, batch), including images and screenshots,, plus verbatim Jev-guided context compaction that replaces the built-in summary.",
   "author": {
     "name": "Nasr Shaer",

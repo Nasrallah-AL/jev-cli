@@ -7,6 +7,8 @@ breaking changes to flags or JSON output; they are called out below.
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-11-08
+
 Catches up with Jev 1.14 and `@typesafe-ai/sdk` 0.7.0 (2026-10-14): images, Box questions, and long context.
 
 ### Added
@@ -29,6 +31,7 @@ Catches up with Jev 1.14 and `@typesafe-ai/sdk` 0.7.0 (2026-10-14): images, Box 
 - TypeSafe requests of 1 KiB or more are zstd-compressed by the SDK on Node 22.15+.
 - Images, Box questions, and `--long-context` are refused up front on the OpenRouter and Cloudflare providers rather than failing upstream.
 - Box answers are validated like the others: an answer without four numeric edges is `Malformed response`.
+- `zod` 4.6.7 (fixes a high-severity advisory affecting versions before 4.6.6); dev tooling updated (vite 8.3.4, vitest 5.0.3, Biome 2.5.15).
 
 ### Fixed
 
@@ -116,6 +119,10 @@ Initial release, published to npm as `jevctl`. The installed command is `jev`.
 - Programmatic exports for embedding the same judgments in Node scripts.
 - Test suite: unit tests, provider transport tests with mocked fetch, CLI tests against a local fake TypeSafe API, and optional live e2e tests.
 
-[Unreleased]: https://github.com/Nasrallah-AL/jev-cli/compare/v0.2.0...HEAD
+[Unreleased]: https://github.com/Nasrallah-AL/jev-cli/compare/v0.3.0...HEAD
+[0.3.0]: https://github.com/Nasrallah-AL/jev-cli/compare/v0.2.3...v0.3.0
+[0.2.3]: https://github.com/Nasrallah-AL/jev-cli/compare/v0.2.2...v0.2.3
+[0.2.2]: https://github.com/Nasrallah-AL/jev-cli/compare/v0.2.1...v0.2.2
+[0.2.1]: https://github.com/Nasrallah-AL/jev-cli/compare/v0.2.0...v0.2.1
 [0.2.0]: https://github.com/Nasrallah-AL/jev-cli/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/Nasrallah-AL/jev-cli/releases/tag/v0.1.0
